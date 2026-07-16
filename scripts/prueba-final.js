@@ -2,7 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 // Inyectamos la llave directamente para evitar problemas con dotenv
 const anthropic = new Anthropic({
-  apiKey: "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",
+  apiKey: process.env.ANTHROPIC_KEY,
 });
 
 async function testConnection() {
