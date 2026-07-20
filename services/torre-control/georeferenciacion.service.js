@@ -37,31 +37,50 @@ class GeoreferenciacionService {
    * @param {Array} datosPlanos - Lista de objetos de la base de datos.
    * @param {String} tipoCapa - Identificador de la capa ('MARITIMA', 'TERRESTRE', 'INFRAESTRUCTURA').
    */
-  _crearGeoJSON(datosPlanos, tipoCapa) {
-    if (!datosPlanos || !Array.isArray(datosPlanos)) return { type: 'FeatureCollection', features: [] };
+  // _crearGeoJSON(datosPlanos, tipoCapa) {
+  //   if (!datosPlanos || !Array.isArray(datosPlanos)) return { type: 'FeatureCollection', features: [] };
 
-    const features = datosPlanos.map(item => {
-      // Extraemos latitud y longitud, soportando diferentes nomenclaturas de las tablas
-      const lat = parseFloat(item.latitud || item.lat || 0);
-      const lon = parseFloat(item.longitud || item.lon || 0);
+  //   const features = datosPlanos.map(item => {
+  //     // Extraemos latitud y longitud, soportando diferentes nomenclaturas de las tablas
+  //     const lat = parseFloat(item.latitud || item.lat || 0);
+  //     const lon = parseFloat(item.longitud || item.lon || 0);
 
-      // GeoJSON exige estrictamente el orden: [Longitud, Latitud]
-      return {
+  //     // GeoJSON exige estrictamente el orden: [Longitud, Latitud]
+  //     return {
+  //       type: 'Feature',
+  //       geometry: {
+  //         type: 'Point',
+  //         coordinates: [lon, lat]
+  //       },
+  //       properties: {
+  //         capa: tipoCapa,
+  //         ...item // Inyectamos dinámicamente el resto de datos (mmsi, placa, velocidad, etc.)
+  //       }
+  //     };
+  //   });
+
+  //   return {
+  //     type: 'FeatureCollection',
+  //     features: features
+  //   };
+  // }
+  _crearGeoJSON(naves, tipo) {
+    return {
+      type: 'FeatureCollection',
+      features: naves.map(n => ({
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [lon, lat]
+          // Si lat o lon son null, ponemos un valor que el mapa ignore
+          coordinates: [n.longitud || 0, n.latitud || 0]
         },
         properties: {
-          capa: tipoCapa,
-          ...item // Inyectamos dinámicamente el resto de datos (mmsi, placa, velocidad, etc.)
+          nombre_motonave: n.motonave,
+          agencia: n.agencia,
+          // ... resto de campos
+          mmsi: n.mmsi
         }
-      };
-    });
-
-    return {
-      type: 'FeatureCollection',
-      features: features
+      })).filter(f => f.geometry.coordinates[0] !== 0) // FILTRO FINAL: Si es 0, no lo mandamos al mapa
     };
   }
 
@@ -128,11 +147,19 @@ class GeoreferenciacionService {
     this.io.on('connection', (socket) => {
 
       // --- SALA MARÍTIMA ---
-      socket.on('unirse-mapa-maritimo', () => {
-        socket.join('sala-mapa-maritimo');
+      socket.on('unirse-mapa-maritimo', async () => {
+        try {
+          // AQUÍ ESTÁ EL CAMBIO: Llamamos a la función que usa la unión de tablas
+          const datos = await motonavesRepository.obtenerPosicionesConDimar();
 
-        // Le mandamos la foto inicial solo al cliente que acaba de entrar
-        this.emitirCapaMaritimaInicial(socket);
+          // Convertimos el resultado de SQL a GeoJSON (esto ya lo debes tener, 
+          // pero asegúrate de que los filtros de lat/lon <> 0 estén aquí)
+          const geoJson = transformarA_GeoJSON(datos);
+
+          socket.emit('geo-capa-maritima-init', geoJson);
+        } catch (error) {
+          console.error("Error al emitir capa marítima:", error);
+        }
       });
 
       socket.on('salir-mapa-maritimo', () => {

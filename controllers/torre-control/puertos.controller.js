@@ -79,6 +79,22 @@ const updatePuerto = async (req, res = response) => {
     const { id_puerto } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
+    if (dataDTO.geocerca_geo) {
+      // Si viene una geocerca nueva, la convertimos para SQL Server
+      dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+    } else {
+      // 🟢 LA MAGIA AQUÍ: Si es null o no viene, borramos la propiedad.
+      // Así Sequelize no la incluye en el SET del UPDATE y respeta la existente en BD.
+      delete dataDTO.geocerca_geo;
+    }
+
+    if (dataDTO.ubicacion_geo) {
+      dataDTO.ubicacion_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.ubicacion_geo}', 4326)`);
+    } else {
+      // Si no viene, la borramos para no sobreescribir con NULL
+      delete dataDTO.ubicacion_geo;
+    }
+
     const puertoActualizado = await puertosService.updatePuerto(id_puerto, req.body, userContext);
 
     res.json({

@@ -28,6 +28,7 @@ const MuelleSchema = Joi.object({
   db_id_origen: Joi.string().max(50).required(),
   especialidad: Joi.string().max(100).allow('', null),
   calado_metros: Joi.number().min(0).max(40).allow(null),
+  descripcion: Joi.string().max(500).allow('', null),
   estado_mantenimiento: Joi.boolean().default(false),
   geocerca_geo: GeoJSONSchema.allow(null)
 });
@@ -44,9 +45,26 @@ const MuelleDTO = (rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) =>
   }
 
   // 🟢 LA VERDADERA MAGIA QPLUS AHORA: Extraer la geometría del FeatureCollection
-  const extractGeometry = (geoJson) => {
+  const extractGeometryAsWKT = (geoJson) => {
     if (!geoJson || !geoJson.features || geoJson.features.length === 0) return null;
-    return geoJson.features[0].geometry;
+
+    const geometry = geoJson.features[0].geometry;
+
+    // Si es un polígono, lo convertimos a la sintaxis WKT: POLYGON((lon lat, lon lat...))
+    if (geometry.type === 'Polygon') {
+      const rings = geometry.coordinates.map(ring => {
+        const coordPairs = ring.map(coord => `${coord[0]} ${coord[1]}`).join(', ');
+        return `(${coordPairs})`;
+      });
+      return `POLYGON(${rings.join(', ')})`;
+    }
+
+    // Si a futuro agregas puntos
+    if (geometry.type === 'Point') {
+      return `POINT(${geometry.coordinates[0]} ${geometry.coordinates[1]})`;
+    }
+
+    return null;
   };
 
   return {
@@ -55,8 +73,9 @@ const MuelleDTO = (rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) =>
     db_id_origen: value.db_id_origen.trim().toUpperCase(),
     especialidad: value.especialidad || null,
     calado_metros: value.calado_metros,
+    descripcion: value.descripcion ? value.descripcion : null,
     estado_mantenimiento: value.estado_mantenimiento,
-    geocerca_geo: extractGeometry(value.geocerca_geo),
+    geocerca_geo: extractGeometryAsWKT(value.geocerca_geo),
 
     usuario_cargue: userContext.codigoUsuario,
     fecha_cargue: new Date().toISOString()
@@ -72,11 +91,12 @@ const MuelleModel = (sequelize) => {
     db_id_origen: { type: DataTypes.STRING(50), allowNull: false },
     especialidad: { type: DataTypes.STRING(100), allowNull: true },
     calado_metros: { type: DataTypes.DECIMAL(4, 1), allowNull: true },
+    descripcion: { type: DataTypes.STRING(500), allowNull: true },
     estado_mantenimiento: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     geocerca_geo: { type: DataTypes.GEOMETRY('POLYGON', 4326), allowNull: true },
 
     usuario_cargue: { type: DataTypes.STRING(200), allowNull: false },
-    fecha_cargue: { type: DataTypes.DATE, allowNull: false } // 🟢 Homologado a DATE
+    fecha_cargue: { type: DataTypes.STRING(100), allowNull: false } // 🟢 Homologado a DATE
   }, {
     tableName: 'T_Maestro_Muelles',
     schema: 'dbo',

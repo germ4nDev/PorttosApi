@@ -73,6 +73,15 @@ const updateTerminal = async (req, res = response) => {
     const { id_terminal } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
+    // if (dataDTO.geocerca_geo) {
+    //   // Si viene una geocerca nueva, la convertimos para SQL Server
+    //   dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+    // } else {
+    //   // 🟢 LA MAGIA AQUÍ: Si es null o no viene, borramos la propiedad.
+    //   // Así Sequelize no la incluye en el SET del UPDATE y respeta la existente en BD.
+    //   delete dataDTO.geocerca_geo;
+    // }
+
     const terminalActualizada = await terminalesService.updateTerminal(id_terminal, req.body, userContext);
 
     res.json({

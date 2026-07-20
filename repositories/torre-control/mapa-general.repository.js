@@ -193,6 +193,37 @@ class MapaGeneralRepository {
     return await this.sequelize.query(query);
   }
 
+  async getBuquesConEstadoOperativo() {
+    const query = `
+            SELECT 
+                d.motonave,
+                d.id_aviso,
+                ais.latitud,
+                ais.longitud,
+                muelle.nombre_muelle,
+                CASE 
+                    WHEN muelle.nombre_muelle IS NOT NULL THEN 'En Muelle'
+                    ELSE 'En Fondeo/Navegación'
+                END AS estado_operativo
+            FROM dbo.TLCNaves_Arribadas d
+            LEFT JOIN dbo.TCL_Homologacion_MMSI hom ON d.id_aviso = hom.id_aviso
+            LEFT JOIN dbo.TCLAisUltimaPosicion ais ON hom.mmsi = ais.mmsi
+            LEFT JOIN dbo.T_Maestro_Muelles muelle ON 
+                ais.latitud IS NOT NULL AND 
+                ais.longitud IS NOT NULL AND
+                muelle.geometria.STIntersects(
+                    geography::Point(ais.latitud, ais.longitud, 4326)
+                ) = 1
+        `;
+
+    try {
+      return await sequelize.query(query, { type: QueryTypes.SELECT });
+    } catch (error) {
+      console.error('SQL Error en MapaLogisticoRepository.getBuquesConEstadoOperativo:', error);
+      throw new Error('Error al ejecutar consulta espacial de buques');
+    }
+  }
+
   async upsertEventoVial(evento) {
     return await TCLEventosViales.upsert(evento, {
       conflictFields: ['idEventoExterno']

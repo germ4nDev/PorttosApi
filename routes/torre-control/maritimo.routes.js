@@ -6,7 +6,7 @@ const
   MaritimoController
     = require('../../controllers/torre-control/maritimo.controller');
 
-const { obtenerPosicionesMapa, obtenerInfraestructuraMapa } = require('../../controllers/torre-control/maritimo.controller');
+const { obtenerPosicionesMapa, obtenerInfraestructuraMapa, obtenerPosicionesAis } = require('../../controllers/torre-control/maritimo.controller');
 
 // ==========================================
 // 🚨 DEBUG: ESTO NOS DIRÁ LA VERDAD 🚨
@@ -28,5 +28,7 @@ router.get('/mapa-posiciones', obtenerPosicionesMapa);
 router.get('/capa-naves', obtenerPosicionesMapa);
 
 router.get('/mapa-infraestructura', obtenerInfraestructuraMapa);
+
+router.get('/posiciones', obtenerPosicionesAis);
 
 module.exports = router;

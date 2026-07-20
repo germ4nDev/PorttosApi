@@ -5,6 +5,7 @@
 const { Sequelize } = require('sequelize');
 const { sequelize } = require('../../database/connection');
 const { MuelleModel, MuelleDTO } = require('../../models/torre-control/muelle.model.js');
+const { wrapToFeatureCollection } = require('../../utils/geoJsonHelper.js');
 const { io } = require('../../index');
 
 class MuellesService {
@@ -12,25 +13,43 @@ class MuellesService {
     this.model = MuelleModel(sequelize);
   }
 
-  // Permite buscar todos o filtrar (ej. solo los activos para el Lobby)
+  _parseWktPolygon(wkt) {
+    if (!wkt) return null;
+    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/);
+    if (!match) return null;
+
+    const coordsStr = match[1]; // "-74.95 10.95, -74.7 10.95..."
+    const coordinates = coordsStr.split(',').map(pair => {
+      return pair.trim().split(' ').map(Number);
+    });
+
+    return { type: 'Polygon', coordinates: [coordinates] };
+  }
+
+  _mapearRegistro(MuelleInstancia) {
+    const p = MuelleInstancia.get({ plain: true });
+    const polygonGeometry = this._parseWktPolygon(p.geocerca_text);
+
+    return {
+      ...p,
+      geocerca_geo: wrapToFeatureCollection(polygonGeometry),
+      geocerca_text: undefined
+    };
+  }
+
   async getMuelles() {
     try {
-      const resultados = await this.model.findAll({
-        raw: true,
+      const registros = await this.model.findAll({
         attributes: {
           include: [
-            [Sequelize.literal('[geocerca_geo].STAsText()'), 'geocerca_geo_wkt']
-          ],
-          exclude: ['geocerca_geo']
+            [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+          ]
         }
       });
 
-      const dataLimpia = resultados.map(muelle => this.procesarMuelle(muelle));
-
-      // 🟢 CORRECCIÓN 1: Retornar statusCode y ok para que el controlador no explote
       return {
         ok: true,
-        data: dataLimpia,
+        data: registros.map(p => this._mapearRegistro(p)),
         statusCode: 200
       };
     } catch (error) {
@@ -39,82 +58,22 @@ class MuellesService {
     }
   }
 
-  procesarMuelle(muelleRaw) {
-    let geojsonPolygon = null;
-
-    // 🟢 CORRECCIÓN 2: Usar el nombre de alias correcto (geocerca_geo_wkt)
-    if (muelleRaw.geocerca_geo_wkt && muelleRaw.geocerca_geo_wkt.startsWith('POLYGON')) {
-      const match = muelleRaw.geocerca_geo_wkt.match(/\(\((.+)\)\)/);
-      if (match) {
-        const pares = match[1].split(',');
-        const coordenadas = pares.map(par => {
-          const [lon, lat] = par.trim().split(/\s+/);
-          return [parseFloat(lon), parseFloat(lat)];
-        });
-
-        geojsonPolygon = {
-          type: 'Polygon',
-          coordinates: [coordenadas]
-        };
-      }
-    }
-
-    return {
-      id_interno: muelleRaw.id_interno,
-      id_terminal: muelleRaw.id_terminal,
-      codigo_muelle: muelleRaw.codigo_muelle,
-      especialidad: muelleRaw.especialidad,
-      calado_metros: muelleRaw.calado_metros,
-      estado_mantenimiento: muelleRaw.estado_mantenimiento,
-      geocerca_geo: geojsonPolygon
-    };
-  }
-
-  async getMuellesByIdTerminal(id_terminal) {
+  async getMuelleById(id_interno) {
     try {
-      // 🟢 CORRECCIÓN 3: Sintaxis correcta de Sequelize y añadir STAsText para evitar fallos a futuro
-      const resultados = await this.model.findAll({
-        raw: true,
-        where: { id_terminal },
+      const muelle = await this.model.findOne({
+        where: { id_interno: id_interno }, // 🐛 Variable corregida
         attributes: {
           include: [
-            [Sequelize.literal('[geocerca_geo].STAsText()'), 'geocerca_geo_wkt']
-          ],
-          exclude: ['geocerca_geo']
+            [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+          ]
         }
       });
 
-      const dataLimpia = resultados.map(muelle => this.procesarMuelle(muelle));
+      if (!muelle) return { ok: false, statusCode: 404 };
 
       return {
         ok: true,
-        data: dataLimpia,
-        statusCode: 200
-      };
-    } catch (error) {
-      console.error("🔴 Error en MuellesService (getMuellesByIdTerminal):", error);
-      throw error;
-    }
-  }
-
-  async getMuelleById(id_nuelle) {
-    try {
-      const registro = await this.model.findOne({
-        where: { id_interno: id_nuelle }, // Ojo, verifica que sea id_interno o el PK correcto
-        raw: true,
-        attributes: {
-          include: [[Sequelize.literal('[geocerca_geo].STAsText()'), 'geocerca_geo_wkt']],
-          exclude: ['geocerca_geo']
-        }
-      });
-
-      if (!registro) throw { statusCode: 404, msg: "No existe el muelle por su Id." };
-
-      const dataLimpia = this.procesarMuelle(registro);
-
-      return {
-        ok: true,
-        data: dataLimpia,
+        data: this._mapearRegistro(muelle),
         statusCode: 200
       };
     } catch (error) {
@@ -124,9 +83,13 @@ class MuellesService {
   }
 
   async crearMuelle(rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
-    // ... tu lógica intacta
     try {
       const dataDTO = MuelleDTO(rawData, userContext);
+
+      if (dataDTO.geocerca_geo) {
+        dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+      }
+
       return await sequelize.transaction(async (t) => {
         const nuevoMuelle = await this.model.create(dataDTO, { transaction: t });
 
@@ -141,30 +104,41 @@ class MuellesService {
     }
   }
 
-  async updateMuelle(id_muelle, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
-    // ... tu lógica intacta
+  async updateMuelle(id_interno, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
       const dataDTO = MuelleDTO(rawData, userContext);
+
+      if (dataDTO.geocerca_geo) {
+        dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+      }
+
       return await sequelize.transaction(async (t) => {
-        const dbMuelle = await this.model.findOne({ where: { id_interno: id_muelle }, transaction: t });
+        const dbMuelle = await this.model.findOne({ where: { id_interno }, transaction: t });
         if (!dbMuelle) throw { statusCode: 404, msg: "No existe el muelle para actualizar." };
 
-        await this.model.update(dataDTO, { where: { id_interno: id_muelle }, transaction: t });
-        const actualizado = await this.model.findOne({ where: { id_interno: id_muelle }, transaction: t });
+        await this.model.update(dataDTO, { where: { id_interno }, transaction: t });
 
-        if (typeof io !== 'undefined') {
-          io.emit('muelles-actualizados', { action: 'update', msg: `Muelle actualizado: ${actualizado.codigo_muelle}` });
-        }
-        return actualizado;
+        const actualizado = await this.model.findOne({
+          where: { id_interno },
+          transaction: t,
+          attributes: {
+            include: [
+              [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+            ]
+          }
+        });
+
+        if (typeof io !== 'undefined') io.emit('muelles-actualizados', { action: 'update' });
+
+        return this._mapearRegistro(actualizado);
       });
     } catch (error) {
-      console.error(`🔴 Error en updateMuelle:`, error.msg || error.message);
+      console.error("🔴 Error en updateMuelle:", error);
       throw error;
     }
   }
 
   async deleteMuelle(id_muelle) {
-    // ... tu lógica intacta
     try {
       return await sequelize.transaction(async (t) => {
         const dbMuelle = await this.model.findOne({ where: { id_interno: id_muelle }, transaction: t });

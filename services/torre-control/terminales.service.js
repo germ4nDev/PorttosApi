@@ -1,25 +1,239 @@
+// /*
+//     Author: German Valencia
+//     Refactored for: QPLUS Standard (Clean Service Layer) - Catálogo de Widgets
+// */
+// const { Sequelize } = require('sequelize');
+// const { sequelize } = require('../../database/connection');
+// const { TerminalModel, TerminalDTO } = require('../../models/torre-control/terminal.model.js');
+// const { wrapToFeatureCollection } = require('../../utils/geoJsonHelper.js');
+// const { io } = require('../../index');
+// const { where } = require('sequelize');
+
+// class TerminalsService {
+//   constructor() {
+//     this.model = TerminalModel(sequelize);
+//   }
+
+//   _parseWktPoint(wkt) {
+//     if (!wkt) return null;
+//     const match = wkt.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/);
+//     if (!match) return null;
+
+//     // CORREGIDO: Ahora retorna el estándar GeoJSON Geometry
+//     return {
+//       type: 'Point',
+//       coordinates: [parseFloat(match[1]), parseFloat(match[2])] // [lon, lat]
+//     };
+//   }
+
+//   _parseWktPolygon(wkt) {
+//     if (!wkt) return null;
+//     const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/);
+//     if (!match) return null;
+
+//     const coordsStr = match[1]; // "-74.95 10.95, -74.7 10.95..."
+//     const coordinates = coordsStr.split(',').map(pair => {
+//       return pair.trim().split(' ').map(Number);
+//     });
+
+//     return { type: 'Polygon', coordinates: [coordinates] };
+//   }
+
+//   // 2. Mapeo para Angular (El viaje de Vuelta)
+//   _mapearRegistro(TerminalInstancia) {
+//     const p = TerminalInstancia.get({ plain: true });
+
+//     // Extraemos la geometría pura
+//     const pointGeometry = this._parseWktPoint(p.ubicacion_text);
+//     const polygonGeometry = this._parseWktPolygon(p.geocerca_text);
+
+//     return {
+//       ...p,
+//       // CORREGIDO: Mantenemos la nomenclatura "_geo" y envolvemos para Mapbox
+//       ubicacion_geo: wrapToFeatureCollection(pointGeometry),
+//       geocerca_geo: wrapToFeatureCollection(polygonGeometry),
+
+//       // Limpiamos los campos de texto extraídos de SQL y los posibles buffers
+//       ubicacion_text: undefined,
+//       geocerca_text: undefined
+//     };
+//   }
+
+//   // Permite buscar todos o filtrar (ej. solo los activos para el Lobby)
+//   async getTerminales() {
+//     try {
+//       const registros = await this.model.findAll({
+//         attributes: {
+//           include: [
+//             [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+//           ]
+//         }
+//       });
+
+//       return {
+//         ok: true,
+//         data: registros.map(p => this._mapearRegistro(p)),
+//         statusCode: 200
+//       };
+//     } catch (error) {
+//       console.error("🔴 Error en TerminalsService (getTerminales):", error);
+//       throw error;
+//     }
+//   }
+
+//   async getTerminalesByIdTerminal(id_Terminal) {
+//     try {
+//       const terminal = await this.model.findOne({
+//         where: { id_Terminal: id },
+//         attributes: {
+//           include: [
+//             [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+//           ]
+//         }
+//       });
+
+//       if (!terminal) return { ok: false, statusCode: 404 };
+
+//       return {
+//         ok: true,
+//         data: this._mapearRegistro(terminal),
+//         statusCode: 200
+//       };
+//     } catch (error) {
+//       console.error("🔴 Error en TerminalsService (getTerminalesByIdTerminal):", error);
+//       throw error;
+//     }
+//   }
+
+//   async getTerminalById(id_terminal) {
+//     try {
+//       const terminal = await this.model.findOne({
+//         where: { id_terminal: id },
+//         attributes: {
+//           include: [
+//             [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+//           ]
+//         }
+//       });
+
+//       if (!terminal) return { ok: false, statusCode: 404 };
+
+//       return {
+//         ok: true,
+//         data: this._mapearRegistro(terminal),
+//         statusCode: 200
+//       };
+//     } catch (error) {
+//       console.error("🔴 Error en TerminalsService (getTerminalById):", error);
+//       throw error;
+//     }
+//   }
+
+//   async crearTerminal(rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
+//     try {
+//       const dataDTO = TerminalDTO(rawData, userContext);
+//       return await sequelize.transaction(async (t) => {
+//         const nuevo = await this.model.create(dataDTO, { transaction: t });
+//         if (typeof io !== 'undefined') io.emit('terminales-actualizados', { action: 'create' });
+//         return nuevo;
+//       });
+//     } catch (error) { throw error; }
+//   }
+
+//   async updateTerminal(id_Terminal, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
+//     try {
+//       const dataDTO = TerminalDTO(rawData, userContext);
+//       return await sequelize.transaction(async (t) => {
+//         await this.model.update(dataDTO, { where: { id_Terminal }, transaction: t });
+//         const actualizado = await this.model.findOne({ where: { id_Terminal }, transaction: t });
+//         if (typeof io !== 'undefined') io.emit('terminales-actualizados', { action: 'update' });
+//         return actualizado;
+//       });
+//     } catch (error) { throw error; }
+//   }
+
+//   async deleteTerminal(id_Terminal) {
+//     try {
+//       return await sequelize.transaction(async (t) => {
+//         await this.model.destroy({ where: { id_Terminal }, transaction: t });
+//         if (typeof io !== 'undefined') io.emit('Terminals-actualizados', { action: 'delete' });
+//         return { success: true };
+//       });
+//     } catch (error) { throw error; }
+//   }
+// }
+
+// module.exports = TerminalsService;
+
 /*
     Author: German Valencia
     Refactored for: QPLUS Standard (Clean Service Layer) - Catálogo de Widgets
 */
+const { Sequelize } = require('sequelize');
 const { sequelize } = require('../../database/connection');
 const { TerminalModel, TerminalDTO } = require('../../models/torre-control/terminal.model.js');
+const { wrapToFeatureCollection } = require('../../utils/geoJsonHelper.js');
 const { io } = require('../../index');
-const { where } = require('sequelize');
 
 class TerminalsService {
   constructor() {
     this.model = TerminalModel(sequelize);
   }
 
-  // Permite buscar todos o filtrar (ej. solo los activos para el Lobby)
+  _parseWktPoint(wkt) {
+    if (!wkt) return null;
+    const match = wkt.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/);
+    if (!match) return null;
+
+    return {
+      type: 'Point',
+      coordinates: [parseFloat(match[1]), parseFloat(match[2])] // [lon, lat]
+    };
+  }
+
+  _parseWktPolygon(wkt) {
+    if (!wkt) return null;
+    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/);
+    if (!match) return null;
+
+    const coordsStr = match[1]; // "-74.95 10.95, -74.7 10.95..."
+    const coordinates = coordsStr.split(',').map(pair => {
+      return pair.trim().split(' ').map(Number);
+    });
+
+    return { type: 'Polygon', coordinates: [coordinates] };
+  }
+
+  // 2. Mapeo para Angular (El viaje de Vuelta)
+  _mapearRegistro(TerminalInstancia) {
+    const p = TerminalInstancia.get({ plain: true });
+
+    // Solo extraemos el polígono de la geocerca
+    const polygonGeometry = this._parseWktPolygon(p.geocerca_text);
+
+    return {
+      ...p,
+      geocerca_geo: wrapToFeatureCollection(polygonGeometry),
+
+      // Limpiamos el campo de texto extraído de SQL
+      geocerca_text: undefined
+    };
+  }
+
+  // Permite buscar todos o filtrar
   async getTerminales() {
     try {
-      // Obtenemos los datos limpios
-      const resultados = await this.model.findAll({ raw: true });
+      const registros = await this.model.findAll({
+        attributes: {
+          include: [
+            [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+          ]
+        }
+      });
+
       return {
         ok: true,
-        data: resultados,
+        data: registros.map(p => this._mapearRegistro(p)),
         statusCode: 200
       };
     } catch (error) {
@@ -28,26 +242,48 @@ class TerminalsService {
     }
   }
 
-  async getTerminalesByIdPuerto(id_puerto) {
+  async getTerminalesByIdTerminal(id_Terminal) {
     try {
-      // Obtenemos los datos limpios
-      const resultados = await this.model.findAll({ raw: true }, { where: id_puerto });
+      const terminal = await this.model.findOne({
+        where: { id_Terminal: id_Terminal }, // 🐛 Variable corregida
+        attributes: {
+          include: [
+            [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+          ]
+        }
+      });
+
+      if (!terminal) return { ok: false, statusCode: 404 };
+
       return {
         ok: true,
-        data: resultados,
+        data: this._mapearRegistro(terminal),
         statusCode: 200
       };
     } catch (error) {
-      console.error("🔴 Error en TerminalsService (getTerminalesByIdPuerto):", error);
+      console.error("🔴 Error en TerminalsService (getTerminalesByIdTerminal):", error);
       throw error;
     }
   }
 
   async getTerminalById(id_terminal) {
     try {
-      const registro = await this.model.findOne({ where: { id_terminal } });
-      if (!registro) throw { statusCode: 404, msg: "No existe el puerto pur su Id." };
-      return registro;
+      const terminal = await this.model.findOne({
+        where: { id_terminal: id_terminal }, // 🐛 Variable corregida
+        attributes: {
+          include: [
+            [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+          ]
+        }
+      });
+
+      if (!terminal) return { ok: false, statusCode: 404 };
+
+      return {
+        ok: true,
+        data: this._mapearRegistro(terminal),
+        statusCode: 200
+      };
     } catch (error) {
       console.error("🔴 Error en TerminalsService (getTerminalById):", error);
       throw error;
@@ -56,103 +292,47 @@ class TerminalsService {
 
   async crearTerminal(rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
-      // 1. Saneamiento y Validación (Escudo QPLUS)
       const dataDTO = TerminalDTO(rawData, userContext);
 
+      // 🔥 FIX SQL SERVER: Tomamos el string WKT que hizo el DTO y lo envolvemos en el literal MSSQL
+      if (dataDTO.geocerca_geo) {
+        dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+      }
+
       return await sequelize.transaction(async (t) => {
-        const nuevoTerminal = await this.model.create(dataDTO, { transaction: t });
-        console.log('✅ Terminal creado en BD:', nuevoTerminal.toJSON());
-
-        // 3. Reactividad
-        if (typeof io !== 'undefined') {
-          io.emit('terminales-actualizados', {
-            action: 'create',
-            msg: `Nuevo terminal registrado: ${nuevoTerminal.nombre}`
-          });
-        }
-
-        return nuevoTerminal;
+        const nuevo = await this.model.create(dataDTO, { transaction: t });
+        if (typeof io !== 'undefined') io.emit('terminales-actualizados', { action: 'create' });
+        return nuevo;
       });
-
-    } catch (error) {
-      console.error('🔴 Error COMPLETO en crearTerminal:', error);
-      throw error;
-    }
+    } catch (error) { throw error; }
   }
 
-  async updateTerminal(id_terminal, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
+  async updateTerminal(id_Terminal, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
       const dataDTO = TerminalDTO(rawData, userContext);
 
+      // 🔥 FIX SQL SERVER: Mismo proceso para la actualización
+      if (dataDTO.geocerca_geo) {
+        dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+      }
+
       return await sequelize.transaction(async (t) => {
-        const dbTerminal = await this.model.findOne({
-          where: { id_terminal },
-          transaction: t
-        });
-
-        if (!dbTerminal) {
-          throw { statusCode: 404, msg: "No existe el terminal para actualizar." };
-        }
-
-        await this.model.update(dataDTO, {
-          where: { id_terminal },
-          transaction: t
-        });
-
-        const actualizado = await this.model.findOne({
-          where: { id_terminal },
-          transaction: t
-        });
-
-        if (typeof io !== 'undefined') {
-          io.emit('terminales-actualizados', {
-            action: 'update',
-            msg: `Terminal actualizado: ${actualizado.nombre}`
-          });
-        }
-
+        await this.model.update(dataDTO, { where: { id_Terminal }, transaction: t });
+        const actualizado = await this.model.findOne({ where: { id_Terminal }, transaction: t });
+        if (typeof io !== 'undefined') io.emit('terminales-actualizados', { action: 'update' });
         return actualizado;
       });
-
-    } catch (error) {
-      console.error(`🔴 Error en updateTerminal:`, error.msg || error.message);
-      throw error;
-    }
+    } catch (error) { throw error; }
   }
 
-  async deleteTerminal(id_terminal) {
+  async deleteTerminal(id_Terminal) {
     try {
       return await sequelize.transaction(async (t) => {
-        const dbTerminal = await this.model.findOne({
-          where: { id_terminal },
-          transaction: t
-        });
-
-        if (!dbTerminal) {
-          throw { statusCode: 404, msg: "No existe un terminal con ese id." };
-        }
-
-        await this.model.destroy({
-          where: { id_terminal },
-          transaction: t
-        });
-
-        if (typeof io !== 'undefined') {
-          io.emit('puertos-actualizados', {
-            action: 'delete',
-            msg: `Terminal eliminado: ${dbTerminal.nombre}`
-          });
-        } else {
-          console.warn('⚠️ Objeto IO no definido. Se eliminó en BD pero no se notificó por socket.');
-        }
-
-        return dbTerminal;
+        await this.model.destroy({ where: { id_Terminal }, transaction: t });
+        if (typeof io !== 'undefined') io.emit('Terminals-actualizados', { action: 'delete' });
+        return { success: true };
       });
-
-    } catch (error) {
-      console.error(`🔴 Error en deleteTerminal (Rollback):`, error.msg || error.message);
-      throw error;
-    }
+    } catch (error) { throw error; }
   }
 }
 

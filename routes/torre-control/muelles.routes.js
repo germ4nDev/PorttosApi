@@ -15,7 +15,7 @@ router.get('/:id', [validarJWT], getMuelleById);
 
 router.post('/', [validarJWT], crearMuelle);
 
-router.put('/:id', [validarJWT], updateMuelle);
+router.put('/:id', updateMuelle);
 
 router.delete('/:id', [validarJWT], deleteMuelle);
 

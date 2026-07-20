@@ -5,10 +5,6 @@
 const cron = require('node-cron');
 const { sequelize } = require('../database/connection');
 
-// ==========================================
-// 1. IMPORTACIÓN DE SERVICIOS
-// (Ajusta las rutas relativas según tu estructura de carpetas)
-// ==========================================
 const ClimateIngestionService = require('../services/torre-control/climate-ingestion.service');
 const IngestionService = require('../services/torre-control/ingestion.service');
 const ReportesService = require('../services/torre-control/reportes.service');
@@ -17,13 +13,13 @@ const MapaGeneralService = require('../services/torre-control/mapa-general.servi
 const SincronizacionService = require('./sincronizacion.service');
 const flotaTerrestreService = require('../services/torre-control/flota-terrestre.service');
 
-// 2. INYECCIÓN DE DEPENDENCIAS (El orden es vital)
 const mapaRepository = new MapaGeneralRepository(sequelize); // <- AQUÍ SE CREA
 const mapaGeneralService = new MapaGeneralService(mapaRepository); // <- SE INYECTA
 
 const initCronJobs = (sequelizeInstance) => {
   console.log('--- [CRON MANAGER] Inicializando tareas en segundo plano ---');
   let simulacionEnCurso = false;
+
   // ---------------------------------------------------------
   // CRON 1: NUEVO ETL DE CLIMA Y ALERTAS (Open-Meteo / IDEAM)
   // Frecuencia: Cada 15 minutos (*/15 * * * *)
@@ -117,14 +113,13 @@ const initCronJobs = (sequelizeInstance) => {
   // -------------------------------------------------------------------
   cron.schedule('*/45 * * * * *', () => {
     console.log(`🕒 [${new Date().toISOString()}] Iniciando sincronización de eventos viales...`);
-    // Y envolvemos la llamada asíncrona en una función autoejecutable (IIFE)
     (async () => {
       try {
         await SincronizacionService.sincronizarEventosViales();
       } catch (error) {
         console.error('❌ Error crítico en el cron de eventos viales:', error);
       }
-    })(); // Los paréntesis del final la ejecutan inmediatamente
+    })();
   });
 
   // -------------------------------------------------------------------
@@ -165,6 +160,53 @@ const initCronJobs = (sequelizeInstance) => {
       }
     })();
   });
+
+  // -------------------------------------------------------------------
+  // CRON 10: SIMULADOR DE MOVIMIENTO DE CAMIONES
+  // -------------------------------------------------------------------
+  cron.schedule('0 * * * *', async () => {
+    console.log('🤖 [Cron] Iniciando búsqueda de naves sin homologar...');
+
+    try {
+      const pendientes = await MaritimoRepository.getNavesSinHomologar();
+      console.log(`🔎 Se encontraron ${pendientes.length} naves pendientes.`);
+
+      for (const barco of pendientes) {
+        // Aquí va tu lógica de búsqueda (puedes buscar en tabla AIS o llamar a una API)
+        const mmsiEncontrado = await buscarMmsiEnTuBaseDeDatos(barco.omi);
+
+        if (mmsiEncontrado) {
+          await MaritimoRepository.registrarHomologacion(barco.id_aviso, mmsiEncontrado);
+          console.log(`✅ ${barco.motonave} homologada con MMSI: ${mmsiEncontrado}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error en el cron:', error);
+    }
+  });
+
+  // Función de ejemplo (tú debes definir la lógica de búsqueda aquí)
+  async function buscarMmsiEnTuBaseDeDatos(omi) {
+    try {
+      const query = `
+            SELECT mmsi 
+            FROM dbo.TCL_Referencia_OMI_MMSI 
+            WHERE omi = :omi
+        `;
+
+      const resultado = await db.sequelize.query(query, {
+        replacements: { omi: omi },
+        type: db.sequelize.QueryTypes.SELECT
+      });
+
+      // Si encontró coincidencia, retorna el MMSI, si no, retorna null
+      return resultado.length > 0 ? resultado[0].mmsi : null;
+
+    } catch (error) {
+      console.error(`❌ Error buscando MMSI para OMI ${omi}:`, error);
+      return null;
+    }
+  }
 
   console.log('--- [CRON MANAGER] Todas las tareas registradas exitosamente ---');
 };

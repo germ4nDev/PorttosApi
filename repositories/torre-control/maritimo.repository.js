@@ -472,56 +472,138 @@ class MaritimoRepository {
   //     return [];
   //   }
   // }
-  async getUltimasPosicionesNaves() {
-    try {
-      const sql = `
+  // async getUltimasPosicionesNaves() {
+  //   try {
+  //     const sql = `
+  //       SELECT 
+  //           p.mmsi, 
+
+  //           -- 1. PRIORIDAD DIMAR: Si cruza, tomamos el nombre oficial de la DIMAR
+  //           COALESCE(n.motonave, p.nombre_motonave, 'DESCONOCIDA') AS nombre_motonave,
+
+  //           p.latitud, 
+  //           p.longitud, 
+  //           p.velocidad, 
+  //           p.rumbo, 
+
+  //           -- 2. PRIORIDAD DIMAR: Tomamos el destino de DIMAR (agencia) o el de AIS
+  //           COALESCE(n.agencia, p.destino, 'NO REPORTADO') AS destino_ais, 
+
+  //           p.estado_inferido AS estado_nave,
+
+  //           -- 3. TODOS LOS DATOS DE DIMAR PARA LLENAR EL POPUP DE ANGULAR
+  //           n.id_aviso,
+  //           n.agencia,
+  //           n.eta,
+  //           n.bandera,
+  //           n.calado,
+  //           n.eslora
+
+  //       FROM dbo.TCLAisUltimaPosicion p
+
+  //       /* 
+  //          EL CRUCE MÁGICO POR NOMBRE:
+  //          Quitamos todos los espacios en blanco y convertimos a mayúsculas en ambas tablas.
+  //          Así 'DOLE ASIA' cruzará perfecto con 'DOLEASIA' o ' DOLE ASIA '.
+  //       */
+  //       LEFT JOIN dbo.TLCNaves_Avisadas n 
+  //           ON REPLACE(UPPER(LTRIM(RTRIM(p.nombre_motonave))), ' ', '') = 
+  //              REPLACE(UPPER(LTRIM(RTRIM(n.motonave))), ' ', '')
+
+  //       WHERE p.latitud IS NOT NULL 
+  //         AND p.longitud IS NOT NULL
+  //     `;
+
+  //     return await db.sequelize.query(sql, {
+  //       type: db.sequelize.QueryTypes.SELECT
+  //     });
+
+  //   } catch (error) {
+  //     console.error("❌ Error en getUltimasPosicionesNaves:", error);
+  //     return [];
+  //   }
+  // }
+  static async getUltimasPosicionesNaves() {
+    const query = `
+        WITH DimarMaster AS (
+            SELECT id_aviso, omi, motonave, agencia, eta, 'ARRIBADA' as estado FROM dbo.TLCNaves_Arribadas
+            UNION ALL
+            SELECT id_aviso, omi, motonave, agencia, eta, 'AVISADA' as estado FROM dbo.TLCNaves_Avisadas
+            UNION ALL
+            SELECT id_aviso, omi, motonave, agencia, eta, 'FONDEO' as estado FROM dbo.TLCNaves_Fondeo
+            UNION ALL
+            SELECT id_aviso, omi, motonave, agencia, eta, 'ZARPADA' as estado FROM dbo.TLCNaves_Zarpadas
+        )
         SELECT 
-            p.mmsi, 
-            
-            -- 1. PRIORIDAD DIMAR: Si cruza, tomamos el nombre oficial de la DIMAR
-            COALESCE(n.motonave, p.nombre_motonave, 'DESCONOCIDA') AS nombre_motonave,
-            
-            p.latitud, 
-            p.longitud, 
-            p.velocidad, 
-            p.rumbo, 
-            
-            -- 2. PRIORIDAD DIMAR: Tomamos el destino de DIMAR (agencia) o el de AIS
-            COALESCE(n.agencia, p.destino, 'NO REPORTADO') AS destino_ais, 
-            
-            p.estado_inferido AS estado_nave,
-            
-            -- 3. TODOS LOS DATOS DE DIMAR PARA LLENAR EL POPUP DE ANGULAR
-            n.id_aviso,
-            n.agencia,
-            n.eta,
-            n.bandera,
-            n.calado,
-            n.eslora
-            
-        FROM dbo.TCLAisUltimaPosicion p
-        
-        /* 
-           EL CRUCE MÁGICO POR NOMBRE:
-           Quitamos todos los espacios en blanco y convertimos a mayúsculas en ambas tablas.
-           Así 'DOLE ASIA' cruzará perfecto con 'DOLEASIA' o ' DOLE ASIA '.
-        */
-        LEFT JOIN dbo.TLCNaves_Avisadas n 
-            ON REPLACE(UPPER(LTRIM(RTRIM(p.nombre_motonave))), ' ', '') = 
-               REPLACE(UPPER(LTRIM(RTRIM(n.motonave))), ' ', '')
-               
-        WHERE p.latitud IS NOT NULL 
-          AND p.longitud IS NOT NULL
-      `;
+            dimar.motonave,
+            dimar.agencia,
+            dimar.estado,
+            dimar.eta,
+            ais.latitud,
+            ais.longitud,
+            ais.velocidad,
+            ais.estado_inferido,
+            ais.mmsi
+        FROM DimarMaster dimar
+        LEFT JOIN dbo.TCL_Homologacion_MMSI hom ON dimar.id_aviso = hom.id_aviso
+        LEFT JOIN dbo.TCLAisUltimaPosicion ais ON hom.mmsi = ais.mmsi
+        -- ESTE ES EL FILTRO SALVADOR: 
+        -- Solo trae barcos si NO tienen AIS (los de puerto) O si tienen AIS pero son coordenadas reales
+        WHERE ais.mmsi IS NULL OR (ais.latitud <> 0 AND ais.longitud <> 0)
+    `;
+    const [resultados] = await db.sequelize.query(query);
+    return resultados;
+  }
 
-      return await db.sequelize.query(sql, {
+  /**
+     * Obtiene la posición unificada de naves (DIMAR + AIS)
+     */
+  static async getPosicionesNavesUnificadas() {
+    const query = `
+            WITH DimarMaster AS (
+                SELECT id_aviso, motonave, agencia, eta, 'ARRIBADA' as estado FROM dbo.TLCNaves_Arribadas
+                UNION ALL
+                SELECT id_aviso, motonave, agencia, eta, 'AVISADA' as estado FROM dbo.TLCNaves_Avisadas
+                UNION ALL
+                SELECT id_aviso, motonave, agencia, eta, 'FONDEO' as estado FROM dbo.TLCNaves_Fondeo
+                UNION ALL
+                SELECT id_aviso, motonave, agencia, eta, 'ZARPADA' as estado FROM dbo.TLCNaves_Zarpadas
+            )
+            SELECT 
+                dimar.motonave,
+                dimar.agencia,
+                dimar.estado,
+                dimar.eta,
+                ais.latitud,
+                ais.longitud,
+                ais.velocidad,
+                ais.estado_inferido,
+                ais.mmsi
+            FROM DimarMaster dimar
+            LEFT JOIN dbo.TCL_Homologacion_MMSI hom 
+                ON CAST(dimar.id_aviso AS VARCHAR(20)) = CAST(hom.id_aviso AS VARCHAR(20))
+            LEFT JOIN dbo.TCLAisUltimaPosicion ais 
+                ON CAST(hom.mmsi AS VARCHAR(20)) = CAST(ais.mmsi AS VARCHAR(20))
+            WHERE (ais.latitud IS NULL OR (ais.latitud <> 0 AND ais.longitud <> 0))
+        `;
+
+    // Usamos QueryTypes.SELECT para recibir objetos limpios
+    return await db.sequelize.query(query, {
+      type: db.sequelize.QueryTypes.SELECT
+    });
+  }
+
+  /**
+   * Ejemplo de query con parámetros (para seguridad)
+   */
+  static async getNavePorId(idAviso) {
+    return await db.sequelize.query(
+      "SELECT * FROM dbo.TLCNaves_Arribadas WHERE id_aviso = :id",
+      {
+        replacements: { id: idAviso },
         type: db.sequelize.QueryTypes.SELECT
-      });
-
-    } catch (error) {
-      console.error("❌ Error en getUltimasPosicionesNaves:", error);
-      return [];
-    }
+      }
+    );
   }
 
   async purgarMotonavesZarpadas() {
@@ -576,6 +658,34 @@ class MaritimoRepository {
     } catch (error) {
       return [];
     }
+  }
+
+  /**
+     * Trae las naves de DIMAR que no tienen MMSI en la tabla de homologación
+     */
+  static async getNavesSinHomologar() {
+    const query = `
+            SELECT d.id_aviso, d.motonave, d.omi 
+            FROM dbo.TLCNaves_Arribadas d
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dbo.TCL_Homologacion_MMSI h 
+                WHERE CAST(h.id_aviso AS VARCHAR(20)) = CAST(d.id_aviso AS VARCHAR(20))
+            )
+        `;
+    return await db.sequelize.query(query, { type: db.sequelize.QueryTypes.SELECT });
+  }
+
+  /**
+   * Registra el vínculo encontrado
+   */
+  static async registrarHomologacion(idAviso, mmsi) {
+    const query = `
+            INSERT INTO dbo.TCL_Homologacion_MMSI (id_aviso, mmsi) 
+            VALUES (:id_aviso, :mmsi)
+        `;
+    return await db.sequelize.query(query, {
+      replacements: { id_aviso: idAviso, mmsi: mmsi }
+    });
   }
 }
 

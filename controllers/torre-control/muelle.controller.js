@@ -26,13 +26,13 @@ const getMuelles = async (req, res = response) => {
 
 const getMuelleById = async (req, res = response) => {
   try {
-    const { id_muelle } = req.params;
-    const respuesta = await muellesService.getMuelleById(id_muelle);
+    const { id } = req.params;
+    const respuesta = await muellesService.getMuelleById(id);
 
     if (!respuesta.ok) {
       return res.status(respuesta.statusCode).json({
         ok: false,
-        msg: `No se encontró un muelle con el ID: ${id_muelle}`
+        msg: `No se encontró un muelle con el ID: ${id}`
       });
     }
 
@@ -70,10 +70,22 @@ const crearMuelle = async (req, res = response) => {
 
 const updateMuelle = async (req, res = response) => {
   try {
-    const { id_muelle } = req.params;
+    const { id } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
-    const muelleActualizado = await muellesService.updateMuelle(id_muelle, req.body, userContext);
+    // if (dataDTO.geocerca_geo) {
+    //   // Si viene una geocerca nueva, la convertimos para SQL Server
+    //   dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
+    // } else {
+    //   // 🟢 LA MAGIA AQUÍ: Si es null o no viene, borramos la propiedad.
+    //   // Así Sequelize no la incluye en el SET del UPDATE y respeta la existente en BD.
+    //   delete dataDTO.geocerca_geo;
+    // }
+
+    console.log('actualizar muelle id', id);
+    console.log('actualizar muelle', req.body);
+    const muelleActualizado = await muellesService.updateMuelle(id, req.body, userContext);
+    console.log('actualizado muelle', muelleActualizado);
 
     res.json({
       ok: true,

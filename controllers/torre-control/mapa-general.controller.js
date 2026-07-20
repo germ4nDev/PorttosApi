@@ -111,11 +111,30 @@ const obtenerGeocercasKPIs = async (req, res) => {
   }
 }
 
+const getMaritimo = async (req, res) => {
+  try {
+    const result = await mapaService.obtenerDashboardMaritimo();
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    // Regla QPLUS: Error con trazabilidad en consola
+    console.error('Error crítico en MapaLogisticoController.getMaritimo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al procesar la Torre de Control Marítima',
+      detail: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
 module.exports = {
   obtenerCapaInfraestructura,
   obtenerCapaTerrestre,
   obtenerGeocercasKPIs,
   obtenerCapaClima,
   obtenerCapaNaves,
-  diagnosticarEsquemas
+  diagnosticarEsquemas,
+  getMaritimo
 };

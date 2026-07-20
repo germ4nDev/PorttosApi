@@ -152,28 +152,28 @@ class AISStreamService {
             return;
         }
 
-        this.ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+        // this.ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
 
-        this.ws.on("open", () => {
-            this.enviarSuscripcion();
-        });
+        // this.ws.on("open", () => {
+        //     // this.enviarSuscripcion();
+        // });
 
-        this.ws.on("message", async (data) => {
-            try {
-                const aisMessage = JSON.parse(data);
-                await this._procesarYPersistirAIS(aisMessage);
-            } catch (err) {
-                // Se ignoran tramas rotas o JSON inválidos silenciosamente
-            }
-        });
+        // this.ws.on("message", async (data) => {
+        //     try {
+        //         const aisMessage = JSON.parse(data);
+        //         await this._procesarYPersistirAIS(aisMessage);
+        //     } catch (err) {
+        //         // Se ignoran tramas rotas o JSON inválidos silenciosamente
+        //     }
+        // });
 
-        this.ws.on("error", (err) => {
-            console.error("❌ [AIS Engine] Error en el túnel satelital:", err.message);
-        });
+        // this.ws.on("error", (err) => {
+        //     console.error("❌ [AIS Engine] Error en el túnel satelital:", err.message);
+        // });
 
-        this.ws.on("close", () => {
-            setTimeout(() => this.conectarWebSocket(), 5000);
-        });
+        // this.ws.on("close", () => {
+        //     setTimeout(() => this.conectarWebSocket(), 5000);
+        // });
     }
 }
 

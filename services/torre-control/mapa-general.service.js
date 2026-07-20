@@ -217,6 +217,18 @@ class MapaGeneralService {
     }
   }
 
+  async obtenerDashboardMaritimo() {
+    // Aquí podrías agregar lógica de negocio adicional (ej. transformar WKT a GeoJSON)
+    // Por ahora, retornamos la data enriquecida con el estado espacial
+    const data = await this.repository.getBuquesConEstadoOperativo();
+
+    return data.map(item => ({
+      ...item,
+      timestamp: new Date().toISOString(), // Añadir meta-data de consulta
+      fuente: 'AIS-Spatial-Correlation'
+    }));
+  }
+
   // Mapeo específico para dbo.TCLEventosViales
   _mapearEventoVial(item) {
     return {
