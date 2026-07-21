@@ -269,7 +269,7 @@ class TerminalsService {
   async getTerminalById(id_terminal) {
     try {
       const terminal = await this.model.findOne({
-        where: { id_terminal: id_terminal }, // 🐛 Variable corregida
+        where: { id_terminal: id_terminal },
         attributes: {
           include: [
             [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']

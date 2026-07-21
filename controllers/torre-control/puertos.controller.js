@@ -29,14 +29,14 @@ const getPuertos = async (req, res = response) => {
 
 const getPuertoById = async (req, res = response) => {
   try {
-    const { id_puerto } = req.params;
-    const respuesta = await puertosService.getPuertoById(id_puerto);
+    const { id } = req.params;
+    const respuesta = await puertosService.getPuertoById(id);
 
     // 🟢 CORRECCIÓN: Si el servicio reporta un 404, lo enviamos correctamente a Angular
     if (!respuesta.ok) {
       return res.status(respuesta.statusCode).json({
         ok: false,
-        msg: `No se encontró un puerto con el ID: ${id_puerto}`
+        msg: `No se encontró un puerto con el ID: ${id}`
       });
     }
 

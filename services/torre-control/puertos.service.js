@@ -3,6 +3,7 @@ const { sequelize } = require('../../database/connection');
 const { PuertoModel, PuertoDTO } = require('../../models/torre-control/puerto.model.js');
 const { wrapToFeatureCollection } = require('../../utils/geoJsonHelper.js');
 const { io } = require('../../index');
+const { stream } = require('exceljs');
 
 class PuertosService {
   constructor() {
@@ -79,6 +80,8 @@ class PuertosService {
   }
 
   async getPuertoById(id) {
+    console.log('consultar el puerto', id);
+
     try {
       const puerto = await this.model.findOne({
         where: { id_puerto: id },

@@ -26,13 +26,13 @@ const getTerminales = async (req, res = response) => {
 
 const getTerminalById = async (req, res = response) => {
   try {
-    const { id_terminal } = req.params;
-    const respuesta = await terminalesService.getTerminalById(id_terminal);
+    const { id } = req.params;
+    const respuesta = await terminalesService.getTerminalById(id);
 
     if (!respuesta.ok) {
       return res.status(respuesta.statusCode).json({
         ok: false,
-        msg: `No se encontró una terminal con el ID: ${id_terminal}`
+        msg: `No se encontró una terminal con el ID: ${id}`
       });
     }
 

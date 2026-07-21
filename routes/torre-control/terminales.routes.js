@@ -12,9 +12,9 @@ const {
 
 // Aquí es donde te estaba fallando (probablemente en el getTerminales o getTerminalById)
 router.get('/', getTerminales);
-router.get('/:id_terminal', getTerminalById);
+router.get('/:id', getTerminalById);
 router.post('/', crearTerminal);
-router.put('/:id_terminal', updateTerminal);
-router.delete('/:id_terminal', deleteTerminal);
+router.put('/:id', updateTerminal);
+router.delete('/:id', deleteTerminal);
 
 module.exports = router;

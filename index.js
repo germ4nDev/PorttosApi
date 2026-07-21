@@ -142,6 +142,7 @@ app.use('/api/tipos-infraestructura', require('./routes/torre-control/tipos-infr
 app.use('/api/eventos-viales', require('./routes/torre-control/evento-vial.routes'));
 app.use('/api/flota-terrestre', require('./routes/torre-control/flota-terrestre.routes'));
 app.use('/api/motonaves', require('./routes/torre-control/motonves.routes'));
+app.use('/api/faros', require('./routes/torre-control/faros.routes'));
 
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "public/index.html"));
