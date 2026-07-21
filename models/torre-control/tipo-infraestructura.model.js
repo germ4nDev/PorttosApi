@@ -10,6 +10,7 @@ const TipoInfraestructuraSchema = Joi.object({
   codigo_tipo: Joi.string().max(100).required(),        // Ej: 'PATIO', 'BODEGA'
   nombre: Joi.string().max(100).required(),
   descripcion: Joi.string().max(4000).allow('', null),
+  color_ui: Joi.string().max(20).allow('', null),
   estado: Joi.bool().default(true),
 });
 
@@ -29,6 +30,7 @@ const TipoInfraestructuraDTO = (rawData, userContext = { codigoUsuario: 'SISTEMA
     codigo_tipo: value.codigo_tipo.trim().toUpperCase(),
     nombre: value.nombre.trim(),
     descripcion: value.descripcion ? value.descripcion.trim() : null,
+    color_ui: value.color_ui ? value.color_ui.trim() : null,
     estado: value.estado,
 
     // Auditoría QPLUS (Estos sí existen en tu tabla según la imagen)
@@ -57,6 +59,7 @@ const TipoInfraestructuraModel = (sequelize) => {
       type: DataTypes.STRING(4000),
       allowNull: true
     },
+    color_ui: { type: DataTypes.STRING(20), allowNull: true },
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

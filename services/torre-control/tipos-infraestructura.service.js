@@ -28,10 +28,10 @@ class TipoInfraestructurasService {
     }
   }
 
-  async getTipoInfraestructuraById(id_tipo) {
+  async getTipoInfraestructuraById(codigo_tipo) {
     try {
-      const registro = await this.model.findOne({ where: { id_tipo } });
-      if (!registro) throw { statusCode: 404, msg: "No existe el puerto pur su Id." };
+      const registro = await this.model.findOne({ where: { codigo_tipo } });
+      if (!registro) throw { statusCode: 404, msg: "No existe el tipo de infraestructura pur su Id." };
       return registro;
     } catch (error) {
       console.error("🔴 Error en TipoInfraestructurasService (getTipoInfraestructuraById):", error);
