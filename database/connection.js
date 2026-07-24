@@ -20,6 +20,23 @@ const sequelize = new Sequelize(
   }
 );
 
+// const sequelize = new Sequelize(
+//   process.env.DB_NAME,
+//   process.env.DB_USER,
+//   process.env.DB_PWD,
+//   {
+// host: process.env.DB_SERVER,
+//     port: 50644,
+//     dialect: 'mssql',
+//     dialectOptions: {
+//       options: {
+//         encrypt: false,
+//         trustServerCertificate: true
+//       }
+//     }
+//   }
+// );
+
 // 2. Objeto db que contendrá los modelos
 const db = {};
 db.Sequelize = Sequelize;

@@ -35,8 +35,7 @@ const getSuscriptorById = async (req, res = response) => {
 const createSuscriptor = async (req, res = response) => {
   try {
     // QPLUS: Inyección de auditoría
-    const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
-    const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
+    const dataDTO = { ...req.body };
 
     const suscriptor = await service.createSuscriptor(dataDTO);
     return res.status(201).json({ ok: true, suscriptor });

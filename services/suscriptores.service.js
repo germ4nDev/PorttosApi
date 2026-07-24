@@ -25,19 +25,20 @@ class SuscriptoresService {
    * Crea un nuevo suscriptor validando unicidad de identificación y nombre
    */
   async createSuscriptor(rawData) {
-    const dataDTO = SuscriptorDTO(rawData);
+    console.log('crear suscriptor', rawData);
+    // const dataDTO = SuscriptorDTO(rawData);
 
     return await sequelize.transaction(async (t) => {
       // Optimización QPLUS: Ejecución en paralelo de validaciones independientes
-      const [existeIdentificacion, existeNombre] = await Promise.all([
-        this.model.findOne({ where: { identificacionSuscriptor: dataDTO.identificacionSuscriptor }, transaction: t }),
-        this.model.findOne({ where: { nombreSuscriptor: dataDTO.nombreSuscriptor }, transaction: t })
-      ]);
+      // const [existeIdentificacion, existeNombre] = await Promise.all([
+      //   this.model.findOne({ where: { identificacionSuscriptor: dataDTO.identificacionSuscriptor }, transaction: t }),
+      //   this.model.findOne({ where: { nombreSuscriptor: dataDTO.nombreSuscriptor }, transaction: t })
+      // ]);
 
-      if (existeIdentificacion) throw { statusCode: 400, msg: "Ya existe un suscriptor con esa identificación." };
-      if (existeNombre) throw { statusCode: 400, msg: "Ya existe un suscriptor con ese nombre." };
+      // if (existeIdentificacion) throw { statusCode: 400, msg: "Ya existe un suscriptor con esa identificación." };
+      // if (existeNombre) throw { statusCode: 400, msg: "Ya existe un suscriptor con ese nombre." };
 
-      const nuevo = await this.model.create(dataDTO, { transaction: t });
+      const nuevo = await this.model.create(rawData, { transaction: t });
 
       io.emit("suscriptores-actualizados", {
         action: "create",

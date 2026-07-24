@@ -13,17 +13,17 @@ const fileUpload = require('express-fileupload');
 const { iniciarVigilanteSupertransporte } = require('./controllers/torre-control/dashboard/alertas.cron');
 const cors = require("cors");
 const cron = require('node-cron');
-const initCronJobs = require('./jobs/cron.manager');
+// const initCronJobs = require('./jobs/cron.manager');
 
-const SitmarEtlService = require('./jobs/sitmar-scraper.service');
-const simuladorEventosTCL = require('./services/torre-control/simulador-eventos.service');
-const IngestionService = require('./services/torre-control/ingestion.service');
-const ReportesService = require('./services/torre-control/reportes.service');
-const AISStreamService = require('./services/torre-control/ais-stream.service');
-const PuertoRepository = require('./repositories/torre-control/puertos.repository');
-const GeoreferenciacionService = require('./services/torre-control/georeferenciacion.service');
-const ClimaEtlService = require('./services/torre-control/clima-etl.service');
-const FlotaTerrestreService = require('./services/torre-control/flota-terrestre.service');
+// const SitmarEtlService = require('./jobs/sitmar-scraper.service');
+// const simuladorEventosTCL = require('./services/torre-control/simulador-eventos.service');
+// const IngestionService = require('./services/torre-control/ingestion.service');
+// const ReportesService = require('./services/torre-control/reportes.service');
+// const AISStreamService = require('./services/torre-control/ais-stream.service');
+// const PuertoRepository = require('./repositories/torre-control/puertos.repository');
+// const GeoreferenciacionService = require('./services/torre-control/georeferenciacion.service');
+// const ClimaEtlService = require('./services/torre-control/clima-etl.service');
+// const FlotaTerrestreService = require('./services/torre-control/flota-terrestre.service');
 // ================================================
 
 const app = express();
@@ -169,7 +169,7 @@ sequelize
       console.log(`🚀 Ecosistema QPLUS escuchando en puerto ${process.env.PORT}`);
 
       require('./jobs/cron.manager');
-      initCronJobs(sequelize);
+      // initCronJobs(sequelize);
 
       try {
         console.log('📡 [Boot] Encendiendo Motor de Ingesta Satelital (AIS)...');

@@ -610,13 +610,13 @@ class MaritimoRepository {
     try {
       const sql = `
         DELETE FROM dbo.TCLAisUltimaPosicion
-        WHERE 
-            (nombre_motonave IS NOT NULL AND NOT EXISTS (
-                SELECT 1 FROM dbo.TLCNaves_Avisadas n 
-                WHERE n.motonave = dbo.TCLAisUltimaPosicion.nombre_motonave
-            ))
-            OR
-            (fechaModificacion < DATEADD(hour, -12, GETDATE()))
+          WHERE 
+              (nombre_motonave IS NOT NULL AND NOT EXISTS (
+                  SELECT 1 FROM dbo.TLCNaves_Avisadas n 
+                  WHERE n.motonave = dbo.TCLAisUltimaPosicion.nombre_motonave
+              ))
+              OR
+              (TRY_CAST(fechaModificacion AS DATETIMEOFFSET) < DATEADD(hour, -12, GETUTCDATE()))
       `;
 
       const [resultados] = await db.sequelize.query(sql);

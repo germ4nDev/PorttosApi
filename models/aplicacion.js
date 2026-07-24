@@ -20,6 +20,7 @@ const AplicacionSchema = Joi.object({
         .messages({ 'any.required': 'La clave de traducción (translateKey) es obligatoria.' }),
 
     imagenInicio: Joi.string().max(100).allow('', null).optional().default('no-imagen.png'),
+    imagenUI: Joi.string().max(100).allow('', null).optional().default('no-imagen.png'),
 
     codigoUsuarioCreacion: Joi.string().max(200).required(),
     fechaCreacion: Joi.string().max(100).required(),
@@ -46,6 +47,7 @@ const AplicacionDTO = (rawData) => {
         estadoAplicacion: value.estadoAplicacion,
         translateKey: value.translateKey.trim(),
         imagenInicio: value.imagenInicio || 'no-imagen.png',
+        imagenUI: value.imagenInicio || 'no-imagen.png',
 
         codigoUsuarioCreacion: value.codigoUsuarioCreacion,
         fechaCreacion: value.fechaCreacion || fechaActual,
@@ -83,6 +85,10 @@ const AplicacionModel = (sequelize) => {
             allowNull: false
         },
         imagenInicio: {
+            type: DataTypes.STRING(255),
+            allowNull: true
+        },
+        imagenUI: {
             type: DataTypes.STRING(255),
             allowNull: true
         },

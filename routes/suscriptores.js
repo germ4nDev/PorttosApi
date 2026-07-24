@@ -23,15 +23,15 @@ router.get("/", getSuscriptores);
 router.get("/:id", validarJWT, getSuscriptorById);
 
 router.post("/", [
-    check('nombreSuscriptor', 'El nombre es obligatorio').not().isEmpty(),
-    check('identificacionSuscriptor', 'La identificación es obligatoria').not().isEmpty(),
-    validarJWT,
-    validarCampos
+    // check('nombreSuscriptor', 'El nombre es obligatorio').not().isEmpty(),
+    // check('identificacionSuscriptor', 'La identificación es obligatoria').not().isEmpty(),
+    // validarJWT,
+    // validarCampos
 ], createSuscriptor);
 
 router.put("/:id", [
-    validarJWT,
-    validarCampos
+    // validarJWT,
+    // validarCampos
 ], updateSuscriptor);
 
 router.delete("/:id", validarJWT, deleteSuscriptor);

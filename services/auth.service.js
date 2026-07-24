@@ -17,7 +17,7 @@ class AuthService {
     const usuarioDB = await this.model.findOne({
       where: { userNameUsuario: username }
     });
-console.log('usuarioDB', usuarioDB);
+    console.log('usuarioDB', usuarioDB);
 
     if (!usuarioDB) throw { statusCode: 404, msg: "Usuario no encontrado." };
     if (!usuarioDB.estadoUsuario) throw { statusCode: 403, msg: "El usuario se encuentra inactivo." };
@@ -54,13 +54,26 @@ console.log('usuarioDB', usuarioDB);
   }
 
   async verificarClave(username, password) {
+    // 1. Validar que el controlador sí esté enviando el password
+    if (!password) throw { statusCode: 400, msg: "La contraseña es requerida para validar." };
+
     const usuarioDB = await this.model.findOne({
-      where: { userNameUsuario: username }
+      where: { userNameUsuario: username },
+      // 2. Forzar la carga de la clave en caso de que esté oculta globalmente en el modelo
+      attributes: { include: ['claveUsuario'] }
     });
 
     if (!usuarioDB) throw { statusCode: 404, msg: "Usuario no encontrado." };
 
+    // 3. Validar que el usuario en la BD realmente tenga un hash registrado
+    if (!usuarioDB.claveUsuario) {
+      console.error(`El usuario ${username} no tiene un hash de contraseña en la BD.`);
+      throw { statusCode: 500, msg: "Error de integridad: El usuario no tiene clave registrada." };
+    }
+
+    // 4. Ejecutar bcrypt sabiendo que ambos parámetros son strings válidos
     const isMatch = await bcrypt.compare(password, usuarioDB.claveUsuario);
+
     if (!isMatch) throw { statusCode: 401, msg: "Contraseña incorrecta." };
 
     return usuarioDB;
