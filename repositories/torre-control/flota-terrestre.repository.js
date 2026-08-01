@@ -237,17 +237,33 @@ class FlotaTerrestreRepository {
   async obtenerDatosGeograficosFlota() {
     const query = `
       SELECT 
-        id AS _id, 
-        placa, 
-        modelo, 
-        tipo_camion, 
-        estado_camion, 
-        velocidad,
-        ubicacion_geo.STX AS lon,
-        ubicacion_geo.STY AS lat
-      FROM TCL_CamionesOperaciones WITH(NOLOCK)
-      WHERE ubicacion_geo IS NOT NULL
+        -- 1. Identificadores y Coordenadas
+        c.id AS _id, 
+        c.ubicacion_geo.STX AS lon,
+        c.ubicacion_geo.STY AS lat,
+        
+        -- 2. Datos Operativos (De la tabla actual)
+        c.nombre AS conductor,
+        c.telefono,
+        c.transportadora,
+        c.estado,
+        c.updated_at AS ultima_actualizacion,
+        c.velocidad,
+
+        -- 3. Datos del Vehículo (Vienen del JOIN)
+        v.placa,
+        v.tipo_camion,
+        v.modelo
+        
+      FROM TCL_CamionesOperaciones c WITH(NOLOCK)
+      
+      -- 👇 AQUÍ HACEMOS EL CRUCE CON LA TABLA DE CAMIONES
+      LEFT JOIN T_Maestro_Camiones v WITH(NOLOCK) 
+      ON c.placa = v.placa 
+      
+      WHERE c.ubicacion_geo IS NOT NULL
     `;
+
     try {
       const [resultados] = await sequelize.query(query);
       return resultados || [];
@@ -356,6 +372,71 @@ class FlotaTerrestreRepository {
 
   // 4. Tablero de KPIs unificado (Terrestre y Marítimo)
   async obtenerGeocercasConKPIs() {
+    // const query = `
+    //   SELECT 
+    //       g.id_faro, 
+    //       g.nombre_faro, 
+    //       g.radio_metros,
+    //       g.tipo_faro,
+    //       g.descripcion, 
+    //       g.color_ui,
+    //       g.geometria_ubicacion.STAsText() as wkt,
+
+    //       -- KPIs Terrestres
+    //       ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
+    //       ISNULL(kpi_camiones.en_ruta, 0) as camiones_ruta,
+    //       ISNULL(kpi_camiones.detenidos, 0) as camiones_detenidos,
+
+    //       -- KPIs Marítimos
+    //       ISNULL(kpi_naves.total_naves, 0) as total_naves,
+    //       ISNULL(kpi_naves.fondeadas, 0) as naves_fondeadas,
+    //       ISNULL(kpi_naves.avisadas, 0) as naves_avisadas,
+    //       ISNULL(kpi_naves.arribadas, 0) as naves_arribadas,
+
+    //       CASE 
+    //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 50 THEN 'ROJO'
+    //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 20 THEN 'AMARILLO'
+    //           ELSE 'VERDE'
+    //       END as estado_kpi
+
+    //   FROM T_Maestro_Faros g WITH(NOLOCK)
+
+    //   -- 🚛 1. BÚSQUEDA TERRESTRE
+    //   OUTER APPLY (
+    //       SELECT 
+    //           COUNT(DISTINCT c.placa) as total_camiones,
+    //           SUM(CASE WHEN c.estado_camion = 'EN_RUTA' THEN 1 ELSE 0 END) as en_ruta,
+    //           SUM(CASE WHEN c.estado_camion != 'EN_RUTA' THEN 1 ELSE 0 END) as detenidos
+    //       FROM TCL_CamionesOperaciones c WITH(NOLOCK) 
+    //       WHERE c.ubicacion_geo IS NOT NULL 
+    //       AND c.ubicacion_geo.STIntersects(g.geometria_ubicacion) = 1
+    //   ) kpi_camiones
+
+    //   -- 🚢 2. BÚSQUEDA MARÍTIMA
+    //   OUTER APPLY (
+    //       SELECT 
+    //           COUNT(DISTINCT ais.mmsi) as total_naves,
+    //           SUM(CASE WHEN perfiles.estado_nave = 'FONDEADAS' THEN 1 ELSE 0 END) as fondeadas,
+    //           SUM(CASE WHEN perfiles.estado_nave = 'AVISADAS' THEN 1 ELSE 0 END) as avisadas,
+    //           SUM(CASE WHEN perfiles.estado_nave = 'ARRIBADAS' THEN 1 ELSE 0 END) as arribadas
+    //       FROM TCLAisUltimaPosicion ais WITH(NOLOCK)
+    //       LEFT JOIN (
+    //           SELECT motonave, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK)
+    //           UNION ALL
+    //           SELECT motonave, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK)
+    //           UNION ALL
+    //           SELECT motonave, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK)
+    //           UNION ALL
+    //           SELECT motonave, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK)
+    //       ) perfiles 
+    //       ON LTRIM(RTRIM(UPPER(ISNULL(ais.nombre_motonave, '')))) = LTRIM(RTRIM(UPPER(ISNULL(perfiles.motonave, ''))))
+
+    //       WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
+    //       AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geometria_ubicacion) = 1
+    //   ) kpi_naves
+
+    //   WHERE g.estado = 1;
+    // `;
     const query = `
       SELECT 
           g.id_faro, 
@@ -364,7 +445,7 @@ class FlotaTerrestreRepository {
           g.tipo_faro,
           g.descripcion, 
           g.color_ui,
-          g.geometria_ubicacion.STAsText() as wkt,
+          g.geocerca_geo.STAsText() as wkt,
           
           -- KPIs Terrestres
           ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
@@ -393,7 +474,7 @@ class FlotaTerrestreRepository {
               SUM(CASE WHEN c.estado_camion != 'EN_RUTA' THEN 1 ELSE 0 END) as detenidos
           FROM TCL_CamionesOperaciones c WITH(NOLOCK) 
           WHERE c.ubicacion_geo IS NOT NULL 
-          AND c.ubicacion_geo.STIntersects(g.geometria_ubicacion) = 1
+          AND c.ubicacion_geo.STIntersects(g.geocerca_geo) = 1
       ) kpi_camiones
       
       -- 🚢 2. BÚSQUEDA MARÍTIMA
@@ -405,18 +486,19 @@ class FlotaTerrestreRepository {
               SUM(CASE WHEN perfiles.estado_nave = 'ARRIBADAS' THEN 1 ELSE 0 END) as arribadas
           FROM TCLAisUltimaPosicion ais WITH(NOLOCK)
           LEFT JOIN (
-              SELECT motonave, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK)
+              SELECT omi, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK) WHERE omi IS NOT NULL
               UNION ALL
-              SELECT motonave, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK)
+              SELECT omi, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK) WHERE omi IS NOT NULL
               UNION ALL
-              SELECT motonave, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK)
+              SELECT omi, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK) WHERE omi IS NOT NULL
               UNION ALL
-              SELECT motonave, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK)
+              SELECT omi, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK) WHERE omi IS NOT NULL
           ) perfiles 
-          ON LTRIM(RTRIM(UPPER(ISNULL(ais.nombre_motonave, '')))) = LTRIM(RTRIM(UPPER(ISNULL(perfiles.motonave, ''))))
+          -- 👇 AQUÍ ESTÁ LA MAGIA: Extraemos los últimos 6 dígitos del AIS
+          ON RIGHT(LTRIM(RTRIM(ais.omi)), 6) = LTRIM(RTRIM(perfiles.omi))
           
           WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
-          AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geometria_ubicacion) = 1
+          AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geocerca_geo) = 1
       ) kpi_naves
       
       WHERE g.estado = 1;
@@ -426,8 +508,10 @@ class FlotaTerrestreRepository {
       const [resultados] = await sequelize.query(query);
       return resultados || [];
     } catch (error) {
-      console.error('❌ [ERROR KPIs FAROS]:', error?.message || error);
-      return [];
+      console.log("❌ DETALLE OCULTO DE SQL SERVER:");
+      // Los errores agrupados por el driver tedious suelen vivir dentro de la propiedad 'errors'
+      const erroresReales = error.parent?.errors || error.errors || error;
+      console.dir(erroresReales, { depth: null, colors: true });
     }
   }
 

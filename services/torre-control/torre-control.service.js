@@ -1,5 +1,13 @@
+const { Sequelize } = require('sequelize');
+const { sequelize } = require('../../database/connection');
+const { BitacoraSincronizacionModel } = require('../../models/torre-control/bitacora-sincronizacion.model');
 
 class TorreControlService {
+
+  constructor() {
+    this.model = BitacoraSincronizacionModel(sequelize);
+  }
+
   static async actualizarLayout(codigo, widgets) {
     // Iniciamos una transacción de Sequelize
     const t = await sequelize.transaction();
@@ -30,4 +38,24 @@ class TorreControlService {
       throw new Error('Error guardando el layout en BD: ');
     }
   }
+
+  async getBitacora() {
+    try {
+      const logs = await this.model.findAll({
+        order: [['fecha_ejecucion', 'DESC']],
+        limit: 100
+      });
+
+      return {
+        success: true,
+        statusCode: 200,
+        data: logs
+      };
+    } catch (error) {
+      console.error("🔴 Error en TorreControlService (getBitacora):", error);
+      throw error;
+    }
+  }
 }
+
+module.exports = new TorreControlService(); // Opcional: exportar la instancia o la clase según uses en el Controller

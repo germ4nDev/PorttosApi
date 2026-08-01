@@ -51,9 +51,9 @@ const createSlider = async (req, res = response) => {
 const updateSlider = async (req, res = response) => {
   try {
     const { id } = req.params;
+    console.log('body', req.body);
 
     // QPLUS: Hidratación del payload de auditoría
-    const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
     const sliderInicio = await service.updateSlider(id, dataDTO);

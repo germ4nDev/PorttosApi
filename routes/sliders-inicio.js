@@ -21,14 +21,9 @@ router.get("/", getSliders);
 
 router.get("/:id", [validarJWT], getSliderById);
 
-router.post("/", [
-    validarJWT,
-    check('nombreSlider', 'El nombre es obligatorio').not().isEmpty(),
-    check('urlImagen', 'La URL de la imagen es obligatoria').not().isEmpty(),
-    validarCampos
-], createSlider);
+router.post("/", [validarJWT], createSlider);
 
-router.put("/:id", [validarJWT, validarCampos], updateSlider);
+router.put("/:id", [validarJWT], updateSlider);
 
 router.delete("/:id", [validarJWT], deleteSlider);
 

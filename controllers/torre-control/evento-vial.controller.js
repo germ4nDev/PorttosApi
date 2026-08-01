@@ -5,6 +5,8 @@ class EventoVialController {
 
   async getEventosActivos(req, res) {
     try {
+
+
       const geojsonData = await EventoVialService.obtenerEventosActivosGeoJSON();
 
       // Entregamos directamente el objeto GeoJSON

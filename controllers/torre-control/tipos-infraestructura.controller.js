@@ -28,8 +28,8 @@ const getTipoInfraestructuraes = async (req, res = response) => {
 
 const getTipoInfraestructuraById = async (req, res = response) => {
   try {
-    const { id_tipo } = req.params;
-    const tipoInfreaestructura = await TiposInfraestructuraService.getTipoInfraestructuraById(id_tipo);
+    const { id } = req.params;
+    const tipoInfreaestructura = await TiposInfraestructuraService.getTipoInfraestructuraById(id);
 
     res.json({
       ok: true,
@@ -48,7 +48,7 @@ const crearTipoInfraestructura = async (req, res = response) => {
     // Aquí puedes inyectar el usuario logueado si usas un middleware de JWT (ej. req.usuario.codigo)
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
-    const nuevoInfraestructura = await tipoInfreaestructuraService.crearTipoInfraestructura(req.body, userContext);
+    const nuevoInfraestructura = await TiposInfraestructuraService.crearTipoInfraestructura(req.body, userContext);
 
     res.status(201).json({
       ok: true,
@@ -68,10 +68,12 @@ const crearTipoInfraestructura = async (req, res = response) => {
 
 const updateTipoInfraestructura = async (req, res = response) => {
   try {
-    const { id_tipo } = req.params;
+    const { id } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
+    console.log('id', id);
+    console.log('req.body', req.body);
 
-    const tipoInfreaestructuraActualizado = await tipoInfreaestructuraService.updateTipoInfraestructura(id_tipo, req.body, userContext);
+    const tipoInfreaestructuraActualizado = await TiposInfraestructuraService.updateTipoInfraestructura(id, req.body, userContext);
 
     res.json({
       ok: true,
@@ -90,8 +92,8 @@ const updateTipoInfraestructura = async (req, res = response) => {
 
 const deleteTipoInfraestructura = async (req, res = response) => {
   try {
-    const { id_tipo } = req.params;
-    const tipoInfreaestructuraEliminado = await tipoInfreaestructuraService.deleteTipoInfraestructura(id_tipo);
+    const { id } = req.params;
+    const tipoInfreaestructuraEliminado = await TiposInfraestructuraService.deleteTipoInfraestructura(id);
 
     res.json({
       ok: true,

@@ -26,13 +26,13 @@ const getInfraestructuras = async (req, res = response) => {
 
 const getInfraestructuraById = async (req, res = response) => {
   try {
-    const { id_infraestructura } = req.params;
-    const respuesta = await infraestructuraService.getInfraestructuraById(id_infraestructura);
+    const { id } = req.params;
+    const respuesta = await infraestructuraService.getInfraestructuraById(id);
 
     if (!respuesta.ok) {
       return res.status(respuesta.statusCode).json({
         ok: false,
-        msg: `No se encontró la infraestructura con el ID: ${id_infraestructura}`
+        msg: `No se encontró la infraestructura con el ID: ${id}`
       });
     }
 
@@ -70,10 +70,11 @@ const crearInfraestructura = async (req, res = response) => {
 
 const updateInfraestructura = async (req, res = response) => {
   try {
-    const { id_infraestructura } = req.params;
+    const { id } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
+    console.log('datos actualizar', req.body);
 
-    const infraestructuraActualizada = await infraestructuraService.updateInfraestructura(id_infraestructura, req.body, userContext);
+    const infraestructuraActualizada = await infraestructuraService.updateInfraestructura(id, req.body, userContext);
 
     res.json({
       ok: true,
@@ -92,8 +93,8 @@ const updateInfraestructura = async (req, res = response) => {
 
 const deleteInfraestructura = async (req, res = response) => {
   try {
-    const { id_infraestructura } = req.params;
-    const infraestructuraEliminada = await infraestructuraService.deleteInfraestructura(id_infraestructura);
+    const { id } = req.params;
+    const infraestructuraEliminada = await infraestructuraService.deleteInfraestructura(id);
 
     res.json({
       ok: true,

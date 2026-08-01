@@ -41,6 +41,7 @@ class UploadsService {
 
 
       'widgets': path.join('widgets'),
+      'puertos': path.join('puertos'),
     };
     this.validTypes = Object.keys(this.folderMap);
   }

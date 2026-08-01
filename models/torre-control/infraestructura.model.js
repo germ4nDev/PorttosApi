@@ -24,11 +24,14 @@ const GeoJSONSchema = Joi.object({
 // 1. EL ESCUDO: Validación de infraestructura
 const InfraestructuraSchema = Joi.object({
   id_terminal: Joi.string().max(50).required(),
+  id_tipo: Joi.number().required(),
   tipo: Joi.string().max(50).required(),
   nombre: Joi.string().max(250).required(),
-  latitud: Joi.number().precision(8).required(),
-  longitud: Joi.number().precision(8).required(),
-  geocerca_geo: GeoJSONSchema.allow(null)
+  ubicacion_geo: Joi.object().unknown(true).allow(null),
+  geocerca_geo: Joi.object().unknown(true).allow(null),
+
+  color_ui: Joi.string().max(20).allow('', null),
+  estado: Joi.boolean().default(true)
 });
 
 // 2. EL ENSAMBLADOR: DTO con auditoría QPLUS
@@ -36,20 +39,36 @@ const InfraestructuraDTO = (rawData, userContext = { codigoUsuario: 'SISTEMA_ADM
   const { error, value } = InfraestructuraSchema.validate(rawData, { abortEarly: false, stripUnknown: true });
   if (error) throw { type: 'ValidationError', details: error.details.map(d => ({ campo: d.context.key, mensaje: d.message })) };
 
-  const extractGeometry = (geoJson) => {
-    if (!geoJson || !geoJson.features || geoJson.features.length === 0) return null;
-    return geoJson.features[0].geometry;
+  const extractGeometry = (geoData) => {
+    if (!geoData) return null;
+
+    // Si viene del form reactivo de Angular
+    if (geoData.geocerca && geoData.geocerca.type) return geoData.geocerca;
+    if (geoData.ubicacion && geoData.ubicacion.type) return geoData.ubicacion;
+
+    // Si viene como FeatureCollection
+    if (geoData.type === 'FeatureCollection' && geoData.features && geoData.features.length > 0) {
+      return geoData.features[0].geometry;
+    }
+
+    // Si es geometría pura
+    if (geoData.type === 'Point' || geoData.type === 'Polygon') return geoData;
+
+    return null;
   };
 
   return {
     id_terminal: value.id_terminal.trim().toUpperCase(),
+    id_tipo: value.id_tipo,
     tipo: value.tipo.toLowerCase().trim(),
     nombre: value.nombre.trim(),
     ubicacion_geo: extractGeometry(value.ubicacion_geo),
     geocerca_geo: extractGeometry(value.geocerca_geo),
+    color_ui: value.color_ui ? value.color_ui.trim() : null,
+    estado: value.estado,
 
     usuario_cargue: userContext.codigoUsuario,
-    fecha_cargue: new Date().toISOString()
+    fecha_cargue: rawData.fecha_cargue ? new Date(rawData.fecha_cargue) : new Date()
   };
 };
 
@@ -58,15 +77,15 @@ const InfraestructuraModel = (sequelize) => {
   const Infra = sequelize.define('T_Maestro_Infraestructura', {
     id_infraestructura: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     id_terminal: { type: DataTypes.STRING(50), allowNull: false },
+    id_tipo: { type: DataTypes.INTEGER, allowNull: false },
     tipo: { type: DataTypes.STRING(50), allowNull: true },
     nombre: { type: DataTypes.STRING(250), allowNull: true },
     ubicacion_geo: { type: DataTypes.GEOMETRY('POINT'), allowNull: true },
     geocerca_geo: { type: DataTypes.GEOMETRY('POLYGON'), allowNull: true },
-    fecha_cargue: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: Sequelize.literal('GETDATE()')
-    }
+    color_ui: { type: DataTypes.STRING(20), allowNull: true },
+    descripcion: { type: DataTypes.STRING(4000), allowNull: true }, // <-- ¡AGREGA ESTO!
+    estado: { type: DataTypes.BOOLEAN, allowNull: true },
+    fecha_cargue: { type: DataTypes.STRING(100), allowNull: true }
   }, {
     tableName: 'T_Maestro_Infraestructura',
     schema: 'dbo',

@@ -42,25 +42,26 @@ class SliderService {
   /**
    * Actualiza un slider existente
    */
-  async updateSlider(sliderId, rawData) {
+  async updateSlider(codigoSlider, rawData) {
     // El controlador inyecta el codigoUsuario en rawData antes de invocar este método
     const dataDTO = SliderInicioDTO(rawData);
+    console.log('dto', dataDTO);
 
     return await sequelize.transaction(async (t) => {
       const registroDB = await this.model.findOne({
-        where: { sliderId },
+        where: { codigoSlider: codigoSlider },
         transaction: t
       });
 
       if (!registroDB) throw { statusCode: 404, msg: 'No existe el slider para actualizar.' };
 
       await this.model.update(dataDTO, {
-        where: { sliderId },
+        where: { codigoSlider: codigoSlider },
         transaction: t
       });
 
       const actualizado = await this.model.findOne({
-        where: { sliderId },
+        where: { codigoSlider: codigoSlider },
         transaction: t
       });
 
@@ -73,10 +74,11 @@ class SliderService {
     });
   }
 
-  async deleteSlider(sliderId) {
+
+  async deleteSlider(codigoSlider) {
     return await sequelize.transaction(async (t) => {
       const registroDB = await this.model.findOne({
-        where: { sliderId },
+        where: { codigoSlider },
         transaction: t
       });
 
@@ -85,7 +87,7 @@ class SliderService {
       const nombreSlider = registroDB.nombreSlider;
 
       await this.model.destroy({
-        where: { sliderId },
+        where: { codigoSlider },
         transaction: t
       });
 

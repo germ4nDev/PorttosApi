@@ -60,6 +60,24 @@ class InfraestructuraService {
     };
   }
 
+  _geoJsonToWkt(geoJson) {
+    if (!geoJson) return null;
+
+    if (geoJson.type === 'Point') {
+      const [lon, lat] = geoJson.coordinates;
+      // CAST es una instrucción core de SQL, 100% a prueba de fallos de driver
+      return Sequelize.literal(`CAST('POINT(${lon} ${lat})' AS geometry)`);
+    }
+
+    if (geoJson.type === 'Polygon') {
+      // Formateo del array de coordenadas para WKT
+      const coordsStr = geoJson.coordinates[0].map(c => `${c[0]} ${c[1]}`).join(', ');
+      return Sequelize.literal(`CAST('POLYGON((${coordsStr}))' AS geometry)`);
+    }
+
+    return null;
+  }
+
   // 3. CRUD de Lectura
   async getInfraestructuras() {
     try {
@@ -108,14 +126,20 @@ class InfraestructuraService {
     }
   }
 
+
+
   // 4. CRUD de Escritura (Usa el patrón DTO QPLUS)
   async crearInfraestructura(rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
-      // El DTO ahora maneja tanto el Point (ubicacion_geo) como el Polygon (geocerca_geo)
       const dataDTO = InfraestructuraDTO(rawData, userContext);
 
+      // Mutamos el payload inyectando el SQL puro antes de pasarlo al modelo
+      const payload = { ...dataDTO };
+      if (payload.ubicacion_geo) payload.ubicacion_geo = this._geoJsonToWkt(payload.ubicacion_geo);
+      if (payload.geocerca_geo) payload.geocerca_geo = this._geoJsonToWkt(payload.geocerca_geo);
+
       return await sequelize.transaction(async (t) => {
-        const nuevaInfra = await this.model.create(dataDTO, { transaction: t });
+        const nuevaInfra = await this.model.create(payload, { transaction: t });
 
         if (typeof io !== 'undefined') {
           io.emit('infraestructura-actualizada', { action: 'create' });
@@ -128,19 +152,82 @@ class InfraestructuraService {
     }
   }
 
+  // async updateInfraestructura(id_infraestructura, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
+  //   try {
+
+  //     const dataDTO = InfraestructuraDTO(rawData, userContext);
+  //     console.log('datos', dataDTO);
+
+  //     // Mutamos el payload inyectando el SQL puro antes de pasarlo al modelo
+  //     const payload = { ...dataDTO };
+  //     if (payload.ubicacion_geo) payload.ubicacion_geo = this._geoJsonToWkt(payload.ubicacion_geo);
+  //     if (payload.geocerca_geo) payload.geocerca_geo = this._geoJsonToWkt(payload.geocerca_geo);
+
+  //     return await sequelize.transaction(async (t) => {
+  //       await this.model.update(payload, {
+  //         where: { id_infraestructura },
+  //         transaction: t
+  //       });
+
+  //       const actualizado = await this.model.findOne({
+  //         where: { id_infraestructura },
+  //         transaction: t,
+  //         attributes: {
+  //           include: [
+  //             [Sequelize.literal('ubicacion_geo.STAsText()'), 'ubicacion_text'],
+  //             [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+  //           ]
+  //         }
+  //       });
+
+  //       if (typeof io !== 'undefined') {
+  //         io.emit('infraestructura-actualizada', { action: 'update' });
+  //       }
+
+  //       return actualizado;
+  //     });
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
   async updateInfraestructura(id_infraestructura, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
+      // 1. Pasa por el DTO (Esto genera el objeto "datos" que ves en tu consola)
       const dataDTO = InfraestructuraDTO(rawData, userContext);
 
+      const payload = { ...dataDTO };
+
+      // 2. LA MAGIA: Convertimos el objeto GeoJSON en texto SQL puro ANTES del update
+      // Si no hacemos esto, Sequelize intentará procesar el objeto y hará Rollback automático.
+      if (payload.ubicacion_geo) {
+        payload.ubicacion_geo = this._geoJsonToWkt(payload.ubicacion_geo);
+      }
+      if (payload.geocerca_geo) {
+        payload.geocerca_geo = this._geoJsonToWkt(payload.geocerca_geo);
+      }
+      if (payload.fecha_cargue && typeof payload.fecha_cargue === 'object') {
+        payload.fecha_cargue = payload.fecha_cargue.toISOString();
+      }
+
+      console.log("Payload mutado listo para Sequelize:", payload); // <-- Revisa esto en consola
+
+      // 3. Ejecutar la transacción
       return await sequelize.transaction(async (t) => {
-        await this.model.update(dataDTO, {
+        await this.model.update(payload, {
           where: { id_infraestructura },
           transaction: t
         });
 
+        // 4. Retornar los datos actualizados...
         const actualizado = await this.model.findOne({
           where: { id_infraestructura },
-          transaction: t
+          transaction: t,
+          attributes: {
+            include: [
+              [Sequelize.literal('ubicacion_geo.STAsText()'), 'ubicacion_text'],
+              [Sequelize.literal('geocerca_geo.STAsText()'), 'geocerca_text']
+            ]
+          }
         });
 
         if (typeof io !== 'undefined') {
@@ -150,6 +237,8 @@ class InfraestructuraService {
         return actualizado;
       });
     } catch (error) {
+      // CONSEJO CLAVE: Imprime el error para no "volar a ciegas"
+      console.error('Error detallado en updateInfraestructura:', error);
       throw error;
     }
   }

@@ -16,14 +16,14 @@ const {
 router.get('/', getInfraestructuras);
 
 // CORRECCIÓN: Cambiamos :id por :id_infraestructura para que coincida con el controlador
-router.get('/:id_infraestructura', [validarJWT], getInfraestructuraById);
+router.get('/:id', [validarJWT], getInfraestructuraById);
 
 router.post('/', [validarJWT], crearInfraestructura);
 
 // CORRECCIÓN: Actualizamos también aquí
-router.put('/:id_infraestructura', [validarJWT], updateInfraestructura);
+router.put('/:id', [validarJWT], updateInfraestructura);
 
 // CORRECCIÓN: Actualizamos también aquí
-router.delete('/:id_infraestructura', [validarJWT], deleteInfraestructura);
+router.delete('/:id', [validarJWT], deleteInfraestructura);
 
 module.exports = router;

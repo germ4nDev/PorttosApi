@@ -3,9 +3,9 @@
     Pattern: QPLUS Standard - Controlador de Terminales
 */
 const { response } = require('express');
-const TerminalesService = require('../../services/torre-control/terminales.service');
+const TerminalsService = require('../../services/torre-control/terminales.service'); // Asegura que la ruta coincida
 
-const terminalesService = new TerminalesService();
+const terminalesService = new TerminalsService();
 
 const getTerminales = async (req, res = response) => {
   try {
@@ -26,6 +26,7 @@ const getTerminales = async (req, res = response) => {
 
 const getTerminalById = async (req, res = response) => {
   try {
+    // 🟢 Ajustado a id para consistencia con los demás métodos
     const { id } = req.params;
     const respuesta = await terminalesService.getTerminalById(id);
 
@@ -70,19 +71,11 @@ const crearTerminal = async (req, res = response) => {
 
 const updateTerminal = async (req, res = response) => {
   try {
-    const { id_terminal } = req.params;
+    const { id } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
-    // if (dataDTO.geocerca_geo) {
-    //   // Si viene una geocerca nueva, la convertimos para SQL Server
-    //   dataDTO.geocerca_geo = Sequelize.literal(`geometry::STGeomFromText('${dataDTO.geocerca_geo}', 4326)`);
-    // } else {
-    //   // 🟢 LA MAGIA AQUÍ: Si es null o no viene, borramos la propiedad.
-    //   // Así Sequelize no la incluye en el SET del UPDATE y respeta la existente en BD.
-    //   delete dataDTO.geocerca_geo;
-    // }
-
-    const terminalActualizada = await terminalesService.updateTerminal(id_terminal, req.body, userContext);
+    // 🟢 La lógica de la geocerca ya se procesa al 100% en el Service
+    const terminalActualizada = await terminalesService.updateTerminal(id, req.body, userContext);
 
     res.json({
       ok: true,
@@ -101,8 +94,8 @@ const updateTerminal = async (req, res = response) => {
 
 const deleteTerminal = async (req, res = response) => {
   try {
-    const { id_terminal } = req.params;
-    const terminalEliminada = await terminalesService.deleteTerminal(id_terminal);
+    const { id } = req.params;
+    const terminalEliminada = await terminalesService.deleteTerminal(id);
 
     res.json({
       ok: true,

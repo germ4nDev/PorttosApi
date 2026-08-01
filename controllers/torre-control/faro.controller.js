@@ -148,7 +148,7 @@ const farosService = require('../../services/torre-control/faro.service');
 
 const getFaros = async (req, res = response) => {
   try {
-    const respuesta = await farosService.obtenerFaros();
+    const respuesta = await farosService.getFaros();
 
     res.status(respuesta.statusCode).json({
       ok: respuesta.ok,
@@ -166,7 +166,7 @@ const getFaros = async (req, res = response) => {
 const getFaroById = async (req, res = response) => {
   try {
     const { id } = req.params;
-    const respuesta = await farosService.obtenerFaroPorId(id);
+    const respuesta = await farosService.getFaroById(id);
 
     if (!respuesta.ok) {
       return res.status(respuesta.statusCode).json({
@@ -213,7 +213,7 @@ const updateFaro = async (req, res = response) => {
     const { id } = req.params;
     const userContext = { codigoUsuario: req.uid || 'SISTEMA_ADMIN' };
 
-    const faroActualizado = await farosService.actualizarFaro(id, req.body, userContext);
+    const faroActualizado = await farosService.updateFaro(id, req.body, userContext);
 
     res.json({
       ok: true,
@@ -233,7 +233,7 @@ const updateFaro = async (req, res = response) => {
 const deleteFaro = async (req, res = response) => {
   try {
     const { id } = req.params;
-    const faroEliminado = await farosService.eliminarFaro(id);
+    const faroEliminado = await farosService.deleteFaro(id);
 
     res.json({
       ok: true,

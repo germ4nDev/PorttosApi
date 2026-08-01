@@ -28,9 +28,9 @@ class TipoInfraestructurasService {
     }
   }
 
-  async getTipoInfraestructuraById(codigo_tipo) {
+  async getTipoInfraestructuraById(id_tipo) {
     try {
-      const registro = await this.model.findOne({ where: { codigo_tipo } });
+      const registro = await this.model.findOne({ where: { id_tipo } });
       if (!registro) throw { statusCode: 404, msg: "No existe el tipo de infraestructura pur su Id." };
       return registro;
     } catch (error) {
@@ -65,34 +65,90 @@ class TipoInfraestructurasService {
     }
   }
 
+  // async updateTipoInfraestructura(id_tipo, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
+  //   try {
+  //     console.log('id_tipo', id_tipo);
+  //     console.log('rawData', rawData);
+
+  //     const dataDTO = TipoInfraestructuraDTO(rawData, userContext);
+  //     console.log('dataDTO', dataDTO);
+
+  //     return await sequelize.transaction(async (t) => {
+  //       const dbTipoInfraestructura = await this.model.findOne({
+  //         where: { id_tipo },
+  //         transaction: t
+  //       });
+
+  //       if (!dbTipoInfraestructura) {
+  //         throw { statusCode: 404, msg: "No existe el tipo para actualizar." };
+  //       }
+
+  //       await this.model.update(dataDTO, {
+  //         where: { id_tipo },
+  //         transaction: t
+  //       });
+
+  //       const actualizado = await this.model.findOne({
+  //         where: { id_tipo },
+  //         transaction: t
+  //       });
+
+  //       if (typeof io !== 'undefined') {
+  //         io.emit('tipos-infraestructura-actualizados', {
+  //           action: 'update',
+  //           msg: `TipoInfraestructura actualizado: ${actualizado.nombre}`
+  //         });
+  //       }
+
+  //       return actualizado;
+  //     });
+
+  //   } catch (error) {
+  //     console.error(`🔴 Error en updateTipoInfraestructura:`, error.msg || error.message);
+  //     throw error;
+  //   }
+  // }
   async updateTipoInfraestructura(id_tipo, rawData, userContext = { codigoUsuario: 'SISTEMA_ADMIN' }) {
     try {
+      // 1. Validar y limpiar la data entrante
       const dataDTO = TipoInfraestructuraDTO(rawData, userContext);
+      console.log('datos del dto en el servicio', dataDTO);
 
-      return await sequelize.transaction(async (t) => {
+      // NOTA: Si NO quieres sobrescribir la fecha/usuario de creación original en BD,
+      // descomenta las siguientes dos líneas para que Sequelize no las incluya en el UPDATE:
+      delete dataDTO.usuario_cargue;
+      delete dataDTO.fecha_cargue;
+
+      // 2. Ejecutar transacción segura referenciando la instancia de sequelize del modelo
+      return await this.model.sequelize.transaction(async (t) => {
+
+        // 3. Verificar existencia
         const dbTipoInfraestructura = await this.model.findOne({
           where: { id_tipo },
           transaction: t
         });
 
         if (!dbTipoInfraestructura) {
-          throw { statusCode: 404, msg: "No existe el tipo para actualizar." };
+          throw { statusCode: 404, msg: `No existe un tipo de infraestructura con el ID: ${id_tipo}` };
         }
 
+        // 4. Actualizar
         await this.model.update(dataDTO, {
           where: { id_tipo },
           transaction: t
         });
 
+        // 5. Recuperar el registro actualizado
         const actualizado = await this.model.findOne({
           where: { id_tipo },
           transaction: t
         });
 
+        // 6. Emitir evento por WebSockets si IO está disponible
         if (typeof io !== 'undefined') {
           io.emit('tipos-infraestructura-actualizados', {
             action: 'update',
-            msg: `TipoInfraestructura actualizado: ${actualizado.nombre}`
+            msg: `Tipo de Infraestructura actualizado: ${actualizado.nombre}`
           });
         }
 
@@ -101,7 +157,12 @@ class TipoInfraestructurasService {
 
     } catch (error) {
       console.error(`🔴 Error en updateTipoInfraestructura:`, error.msg || error.message);
-      throw error;
+      // Mantener el formato QPLUS de errores
+      throw {
+        statusCode: error.type === 'ValidationError' ? 400 : (error.statusCode || 500),
+        msg: error.type === 'ValidationError' ? 'Error de validación de datos' : (error.msg || 'Error interno al actualizar'),
+        details: error.details || error
+      };
     }
   }
 

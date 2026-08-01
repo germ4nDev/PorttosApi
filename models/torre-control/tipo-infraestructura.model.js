@@ -63,16 +63,15 @@ const TipoInfraestructuraModel = (sequelize) => {
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
+      defaultValue: false
     },
     usuario_cargue: {
       type: DataTypes.STRING(200),
-      allowNull: true
+      allowNull: false
     },
     fecha_cargue: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: Sequelize.literal('GETDATE()')
+      type: DataTypes.STRING(100),
+      allowNull: false
     }
   }, {
     // ⚠️ IMPORTANTE: Cambia esto por el nombre real de tu tabla en SQL Server
