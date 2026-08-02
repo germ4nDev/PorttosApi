@@ -13,17 +13,17 @@ const fileUpload = require('express-fileupload');
 const { iniciarVigilanteSupertransporte } = require('./controllers/torre-control/dashboard/alertas.cron');
 const cors = require("cors");
 const cron = require('node-cron');
-// const initCronJobs = require('./jobs/cron.manager');
+const initCronJobs = require('./jobs/cron.manager');
 
-// const SitmarEtlService = require('./jobs/sitmar-scraper.service');
-// const simuladorEventosTCL = require('./services/torre-control/simulador-eventos.service');
-// const IngestionService = require('./services/torre-control/ingestion.service');
-// const ReportesService = require('./services/torre-control/reportes.service');
-// const AISStreamService = require('./services/torre-control/ais-stream.service');
-// const PuertoRepository = require('./repositories/torre-control/puertos.repository');
-// const GeoreferenciacionService = require('./services/torre-control/georeferenciacion.service');
-// const ClimaEtlService = require('./services/torre-control/clima-etl.service');
-// const FlotaTerrestreService = require('./services/torre-control/flota-terrestre.service');
+const SitmarEtlService = require('./jobs/sitmar-scraper.service');
+const simuladorEventosTCL = require('./services/torre-control/simulador-eventos.service');
+const IngestionService = require('./services/torre-control/ingestion.service');
+const ReportesService = require('./services/torre-control/reportes.service');
+const AISStreamService = require('./services/torre-control/ais-stream.service');
+const PuertoRepository = require('./repositories/torre-control/puertos.repository');
+const GeoreferenciacionService = require('./services/torre-control/georeferenciacion.service');
+const ClimaEtlService = require('./services/torre-control/clima-etl.service');
+const FlotaTerrestreService = require('./services/torre-control/flota-terrestre.service');
 // ================================================
 
 const app = express();
@@ -143,6 +143,7 @@ app.use('/api/eventos-viales', require('./routes/torre-control/evento-vial.route
 app.use('/api/flota-terrestre', require('./routes/torre-control/flota-terrestre.routes'));
 app.use('/api/motonaves', require('./routes/torre-control/motonves.routes'));
 app.use('/api/faros', require('./routes/torre-control/faros.routes'));
+app.use('/api/radar', require('./routes/torre-control/radar.routes'));
 
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "public/index.html"));
@@ -169,7 +170,7 @@ sequelize
       console.log(`🚀 Ecosistema QPLUS escuchando en puerto ${process.env.PORT}`);
 
       require('./jobs/cron.manager');
-      // initCronJobs(sequelize);
+      initCronJobs(sequelize);
 
       try {
         console.log('📡 [Boot] Encendiendo Motor de Ingesta Satelital (AIS)...');
@@ -181,7 +182,7 @@ sequelize
       setTimeout(async () => {
         try {
           // console.log('🔄 [COLD START] Ejecutando sincronización de arranque (Sitmar)...');
-          // await SitmarEtlService.sincronizarTodasLasNaves();
+          await SitmarEtlService.sincronizarTodasLasNaves();
           console.log('✅ [COLD START] Sincronización inicial completada.');
         } catch (syncError) {
           console.error('❌ [COLD START ERROR] Fallo inicial de Sitmar:', syncError.message);

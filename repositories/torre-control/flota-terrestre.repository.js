@@ -1,8 +1,7 @@
-
 // /*
 //     Author: German Dario Valencia Salazar
 //     Pattern: QPLUS Repository Pattern - Flota Terrestre
-//     Optimización: Conversión Grados a Metros (111320.0) en Geocercas
+//     Optimización: Migración a T_Maestro_Faros, uso de STIntersects y Legacy Bridge Histórico
 // */
 // const { sequelize } = require('../../models');
 
@@ -12,17 +11,33 @@
 //   async obtenerDatosGeograficosFlota() {
 //     const query = `
 //       SELECT 
-//         id AS _id, 
-//         placa, 
-//         modelo, 
-//         tipo_camion, 
-//         estado_camion, 
-//         velocidad,
-//         ubicacion_geo.STX AS lon,
-//         ubicacion_geo.STY AS lat
-//       FROM TCL_CamionesOperaciones WITH(NOLOCK)
-//       WHERE ubicacion_geo IS NOT NULL
+//         -- 1. Identificadores y Coordenadas
+//         c.id AS _id, 
+//         c.ubicacion_geo.STX AS lon,
+//         c.ubicacion_geo.STY AS lat,
+
+//         -- 2. Datos Operativos (De la tabla actual)
+//         c.nombre AS conductor,
+//         c.telefono,
+//         c.transportadora,
+//         c.estado,
+//         c.updated_at AS ultima_actualizacion,
+//         c.velocidad,
+
+//         -- 3. Datos del Vehículo (Vienen del JOIN)
+//         v.placa,
+//         v.tipo_camion,
+//         v.modelo
+
+//       FROM TCL_CamionesOperaciones c WITH(NOLOCK)
+
+//       -- 👇 AQUÍ HACEMOS EL CRUCE CON LA TABLA DE CAMIONES
+//       LEFT JOIN T_Maestro_Camiones v WITH(NOLOCK) 
+//       ON c.placa = v.placa 
+
+//       WHERE c.ubicacion_geo IS NOT NULL
 //     `;
+
 //     try {
 //       const [resultados] = await sequelize.query(query);
 //       return resultados || [];
@@ -32,7 +47,7 @@
 //     }
 //   }
 
-//   // 2. Detectar eventos con la corrección de Grados
+//   // 2. Detectar eventos en tiempo real con polígonos
 //   async detectarEventosGeocerca(offset = 0, batchSize = 1000) {
 //     const query = `
 //         WITH Lote AS (
@@ -44,21 +59,21 @@
 //         )
 //         SELECT T.placa, G.nombre_faro AS Lugar, G.tipo_faro AS tipo, GETDATE() AS FechaEvento
 //         FROM Lote T
-//         INNER JOIN T_Maestro_Geocercas G WITH(NOLOCK) 
-//             -- 🟢 CORRECCIÓN: (radio / 111320.0) convierte metros a grados en planicies
-//             ON T.ubicacion_geo.STDistance(G.geometria_ubicacion) <= (G.radio_metros / 111320.0)
+//         INNER JOIN T_Maestro_Faros G WITH(NOLOCK) 
+//             -- 🟢 OPTIMIZACIÓN: Intersección espacial directa de SQL Server
+//             ON T.ubicacion_geo.STIntersects(G.geometria_ubicacion) = 1
 //         WHERE G.estado = 1;
 //     `;
 //     try {
 //       const [eventos] = await sequelize.query(query);
 //       return eventos || [];
 //     } catch (error) {
-//       console.error('❌ [ERROR DETECTAR GEOCERCAS]:', error?.message || error);
+//       console.error('❌ [ERROR DETECTAR EVENTOS FAROS]:', error?.message || error);
 //       return [];
 //     }
 //   }
 
-//   // 3. Ejecuta la simulación matemática en SQL Server (Ya no dará Timeout)
+//   // 3. Ejecuta la simulación matemática en SQL Server (Motor Vectorial)
 //   async ejecutarMotorVectorial(offset, batchSize) {
 //     const sqlQuery = `
 //         SET NOCOUNT ON;
@@ -102,15 +117,15 @@
 //             ORDER BY R.geometria_via.STDistance(T.ubicacion_geo) ASC
 //         ) ViaCercana;
 
+//         -- 🟢 LEGACY BRIDGE: Guardamos id_faro en la columna antigua id_geocerca
 //         INSERT INTO TCL_HistoricoEventos (placa, id_geocerca, tipo_evento)
-//         SELECT LC.placa, G.id_geocerca, 'ENTRADA'
+//         SELECT LC.placa, G.id_faro, 'ENTRADA'
 //         FROM @LoteCamiones LC
-//         -- 🟢 CORRECCIÓN DE UNIDADES AQUÍ TAMBIÉN
-//         INNER JOIN T_Maestro_Geocercas G ON LC.ubicacion_geo.STDistance(G.geometria_ubicacion) <= (G.radio_metros / 111320.0)
+//         INNER JOIN T_Maestro_Faros G ON LC.ubicacion_geo.STIntersects(G.geometria_ubicacion) = 1
 //         WHERE G.estado = 1 AND NOT EXISTS (
 //             SELECT 1 FROM TCL_HistoricoEventos H 
 //             WHERE H.placa = LC.placa 
-//               AND H.id_geocerca = G.id_geocerca 
+//               AND H.id_geocerca = G.id_faro -- Empalme de compatibilidad
 //               AND H.fecha_evento > DATEADD(minute, -30, GETDATE())
 //         );
 
@@ -129,15 +144,82 @@
 //     }
 //   }
 
-//   // 4. KPIs Corregidos: Enviamos el radio real y filtramos camiones únicos
+//   // 4. Tablero de KPIs unificado (Terrestre y Marítimo)
 //   async obtenerGeocercasConKPIs() {
+//     // const query = `
+//     //   SELECT 
+//     //       g.id_faro, 
+//     //       g.nombre_faro, 
+//     //       g.radio_metros,
+//     //       g.tipo_faro,
+//     //       g.descripcion, 
+//     //       g.color_ui,
+//     //       g.geometria_ubicacion.STAsText() as wkt,
+
+//     //       -- KPIs Terrestres
+//     //       ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
+//     //       ISNULL(kpi_camiones.en_ruta, 0) as camiones_ruta,
+//     //       ISNULL(kpi_camiones.detenidos, 0) as camiones_detenidos,
+
+//     //       -- KPIs Marítimos
+//     //       ISNULL(kpi_naves.total_naves, 0) as total_naves,
+//     //       ISNULL(kpi_naves.fondeadas, 0) as naves_fondeadas,
+//     //       ISNULL(kpi_naves.avisadas, 0) as naves_avisadas,
+//     //       ISNULL(kpi_naves.arribadas, 0) as naves_arribadas,
+
+//     //       CASE 
+//     //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 50 THEN 'ROJO'
+//     //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 20 THEN 'AMARILLO'
+//     //           ELSE 'VERDE'
+//     //       END as estado_kpi
+
+//     //   FROM T_Maestro_Faros g WITH(NOLOCK)
+
+//     //   -- 🚛 1. BÚSQUEDA TERRESTRE
+//     //   OUTER APPLY (
+//     //       SELECT 
+//     //           COUNT(DISTINCT c.placa) as total_camiones,
+//     //           SUM(CASE WHEN c.estado_camion = 'EN_RUTA' THEN 1 ELSE 0 END) as en_ruta,
+//     //           SUM(CASE WHEN c.estado_camion != 'EN_RUTA' THEN 1 ELSE 0 END) as detenidos
+//     //       FROM TCL_CamionesOperaciones c WITH(NOLOCK) 
+//     //       WHERE c.ubicacion_geo IS NOT NULL 
+//     //       AND c.ubicacion_geo.STIntersects(g.geometria_ubicacion) = 1
+//     //   ) kpi_camiones
+
+//     //   -- 🚢 2. BÚSQUEDA MARÍTIMA
+//     //   OUTER APPLY (
+//     //       SELECT 
+//     //           COUNT(DISTINCT ais.mmsi) as total_naves,
+//     //           SUM(CASE WHEN perfiles.estado_nave = 'FONDEADAS' THEN 1 ELSE 0 END) as fondeadas,
+//     //           SUM(CASE WHEN perfiles.estado_nave = 'AVISADAS' THEN 1 ELSE 0 END) as avisadas,
+//     //           SUM(CASE WHEN perfiles.estado_nave = 'ARRIBADAS' THEN 1 ELSE 0 END) as arribadas
+//     //       FROM TCLAisUltimaPosicion ais WITH(NOLOCK)
+//     //       LEFT JOIN (
+//     //           SELECT motonave, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK)
+//     //           UNION ALL
+//     //           SELECT motonave, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK)
+//     //           UNION ALL
+//     //           SELECT motonave, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK)
+//     //           UNION ALL
+//     //           SELECT motonave, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK)
+//     //       ) perfiles 
+//     //       ON LTRIM(RTRIM(UPPER(ISNULL(ais.nombre_motonave, '')))) = LTRIM(RTRIM(UPPER(ISNULL(perfiles.motonave, ''))))
+
+//     //       WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
+//     //       AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geometria_ubicacion) = 1
+//     //   ) kpi_naves
+
+//     //   WHERE g.estado = 1;
+//     // `;
 //     const query = `
 //       SELECT 
-//           g.id_geocerca, 
+//           g.id_faro, 
 //           g.nombre_faro, 
 //           g.radio_metros,
 //           g.tipo_faro,
-//           g.geometria_ubicacion.STAsText() as wkt,
+//           g.descripcion, 
+//           g.color_ui,
+//           g.geocerca_geo.STAsText() as wkt,
 
 //           -- KPIs Terrestres
 //           ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
@@ -156,7 +238,7 @@
 //               ELSE 'VERDE'
 //           END as estado_kpi
 
-//       FROM T_Maestro_Geocercas g WITH(NOLOCK)
+//       FROM T_Maestro_Faros g WITH(NOLOCK)
 
 //       -- 🚛 1. BÚSQUEDA TERRESTRE
 //       OUTER APPLY (
@@ -166,10 +248,10 @@
 //               SUM(CASE WHEN c.estado_camion != 'EN_RUTA' THEN 1 ELSE 0 END) as detenidos
 //           FROM TCL_CamionesOperaciones c WITH(NOLOCK) 
 //           WHERE c.ubicacion_geo IS NOT NULL 
-//           AND c.ubicacion_geo.STDistance(g.geometria_ubicacion) <= (g.radio_metros / 111320.0) 
+//           AND c.ubicacion_geo.STIntersects(g.geocerca_geo) = 1
 //       ) kpi_camiones
 
-//       -- 🚢 2. BÚSQUEDA MARÍTIMA (CRUCE DE PERFIL + POSICIÓN AIS)
+//       -- 🚢 2. BÚSQUEDA MARÍTIMA
 //       OUTER APPLY (
 //           SELECT 
 //               COUNT(DISTINCT ais.mmsi) as total_naves,
@@ -178,20 +260,19 @@
 //               SUM(CASE WHEN perfiles.estado_nave = 'ARRIBADAS' THEN 1 ELSE 0 END) as arribadas
 //           FROM TCLAisUltimaPosicion ais WITH(NOLOCK)
 //           LEFT JOIN (
-//               SELECT motonave, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK)
+//               SELECT omi, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK) WHERE omi IS NOT NULL
 //               UNION ALL
-//               SELECT motonave, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK)
+//               SELECT omi, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK) WHERE omi IS NOT NULL
 //               UNION ALL
-//               SELECT motonave, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK)
+//               SELECT omi, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK) WHERE omi IS NOT NULL
 //               UNION ALL
-//               SELECT motonave, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK)
+//               SELECT omi, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK) WHERE omi IS NOT NULL
 //           ) perfiles 
-//           -- 🔥 Blindaje contra nombres nulos o espacios en blanco
-//           ON LTRIM(RTRIM(UPPER(ISNULL(ais.nombre_motonave, '')))) = LTRIM(RTRIM(UPPER(ISNULL(perfiles.motonave, ''))))
+//           -- 👇 AQUÍ ESTÁ LA MAGIA: Extraemos los últimos 6 dígitos del AIS
+//           ON RIGHT(LTRIM(RTRIM(ais.omi)), 6) = LTRIM(RTRIM(perfiles.omi))
 
-//           -- 🔥 Blindaje vital: Ignorar naves sin coordenadas antes de armar el Point
 //           WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
-//           AND geometry::Point(ais.longitud, ais.latitud, 4326).STDistance(g.geometria_ubicacion) <= (g.radio_metros / 111320.0)
+//           AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geocerca_geo) = 1
 //       ) kpi_naves
 
 //       WHERE g.estado = 1;
@@ -201,20 +282,28 @@
 //       const [resultados] = await sequelize.query(query);
 //       return resultados || [];
 //     } catch (error) {
-//       console.error('❌ [ERROR KPIs GEOCERCAS]:', error?.message || error);
-//       return [];
+//       console.log("❌ DETALLE OCULTO DE SQL SERVER:");
+//       // Los errores agrupados por el driver tedious suelen vivir dentro de la propiedad 'errors'
+//       const erroresReales = error.parent?.errors || error.errors || error;
+//       console.dir(erroresReales, { depth: null, colors: true });
 //     }
 //   }
 
+//   // 5. Consulta específica para zonas marítimas puras
 //   async obtenerGeocercasMaritimas() {
 //     const query = `
-//       SELECT id_geocerca, nombre_faro, radio_metros, 
+//       SELECT id_faro, nombre_faro, radio_metros, color_ui, descripcion, 
 //              geometria_ubicacion.STAsText() as wkt
-//       FROM T_Maestro_Geocercas WITH(NOLOCK)
+//       FROM T_Maestro_Faros WITH(NOLOCK)
 //       WHERE tipo_faro = 'MARITIMA' AND estado = 1;
 //     `;
-//     const [resultados] = await sequelize.query(query);
-//     return resultados;
+//     try {
+//       const [resultados] = await sequelize.query(query);
+//       return resultados || [];
+//     } catch (error) {
+//       console.error('❌ [ERROR OBTENER FAROS MARÍTIMOS]:', error?.message || error);
+//       return [];
+//     }
 //   }
 
 //   async upsertPosicion(dtoData) {
@@ -237,12 +326,12 @@ class FlotaTerrestreRepository {
   async obtenerDatosGeograficosFlota() {
     const query = `
       SELECT 
-        -- 1. Identificadores y Coordenadas
+        /* 1. Identificadores y Coordenadas */
         c.id AS _id, 
         c.ubicacion_geo.STX AS lon,
         c.ubicacion_geo.STY AS lat,
         
-        -- 2. Datos Operativos (De la tabla actual)
+        /* 2. Datos Operativos (De la tabla actual) */
         c.nombre AS conductor,
         c.telefono,
         c.transportadora,
@@ -250,14 +339,14 @@ class FlotaTerrestreRepository {
         c.updated_at AS ultima_actualizacion,
         c.velocidad,
 
-        -- 3. Datos del Vehículo (Vienen del JOIN)
+        /* 3. Datos del Vehículo (Vienen del JOIN) */
         v.placa,
         v.tipo_camion,
         v.modelo
         
       FROM TCL_CamionesOperaciones c WITH(NOLOCK)
       
-      -- 👇 AQUÍ HACEMOS EL CRUCE CON LA TABLA DE CAMIONES
+      /* 👇 AQUÍ HACEMOS EL CRUCE CON LA TABLA DE CAMIONES */
       LEFT JOIN T_Maestro_Camiones v WITH(NOLOCK) 
       ON c.placa = v.placa 
       
@@ -274,9 +363,33 @@ class FlotaTerrestreRepository {
   }
 
   // 2. Detectar eventos en tiempo real con polígonos
+  // async detectarEventosGeocerca(offset = 0, batchSize = 1000) {
+  //   const query = `
+  //       ;WITH Lote AS (
+  //           SELECT placa, ubicacion_geo 
+  //           FROM TCL_CamionesOperaciones WITH(NOLOCK)
+  //           WHERE estado_camion = 'EN_RUTA' AND ubicacion_geo IS NOT NULL
+  //           ORDER BY id ASC
+  //           OFFSET ${offset} ROWS FETCH NEXT ${batchSize} ROWS ONLY
+  //       )
+  //       SELECT T.placa, G.nombre_faro AS Lugar, G.tipo_faro AS tipo, GETDATE() AS FechaEvento
+  //       FROM Lote T
+  //       INNER JOIN T_Maestro_Faros G WITH(NOLOCK) 
+  //           /* 🟢 OPTIMIZACIÓN: Intersección espacial directa de SQL Server */
+  //           ON T.ubicacion_geo.STIntersects(G.geometria_ubicacion) = 1
+  //       WHERE G.estado = 1;
+  //   `;
+  //   try {
+  //     const [eventos] = await sequelize.query(query);
+  //     return eventos || [];
+  //   } catch (error) {
+  //     console.error('❌ [ERROR DETECTAR EVENTOS FAROS]:', error?.message || error);
+  //     return [];
+  //   }
+  // }
   async detectarEventosGeocerca(offset = 0, batchSize = 1000) {
     const query = `
-        WITH Lote AS (
+        ;WITH Lote AS (
             SELECT placa, ubicacion_geo 
             FROM TCL_CamionesOperaciones WITH(NOLOCK)
             WHERE estado_camion = 'EN_RUTA' AND ubicacion_geo IS NOT NULL
@@ -286,15 +399,17 @@ class FlotaTerrestreRepository {
         SELECT T.placa, G.nombre_faro AS Lugar, G.tipo_faro AS tipo, GETDATE() AS FechaEvento
         FROM Lote T
         INNER JOIN T_Maestro_Faros G WITH(NOLOCK) 
-            -- 🟢 OPTIMIZACIÓN: Intersección espacial directa de SQL Server
-            ON T.ubicacion_geo.STIntersects(G.geometria_ubicacion) = 1
+            /* 🟢 CORRECCIÓN: Usando la columna geocerca_geo */
+            ON T.ubicacion_geo.STIntersects(G.geocerca_geo) = 1
         WHERE G.estado = 1;
     `;
     try {
       const [eventos] = await sequelize.query(query);
       return eventos || [];
     } catch (error) {
-      console.error('❌ [ERROR DETECTAR EVENTOS FAROS]:', error?.message || error);
+      // Desempaquetamos el error real de SQL Server
+      const mensajeReal = error.original?.message || error.parent?.message || error.message;
+      console.error('❌ [ERROR DETECTAR EVENTOS FAROS]:', mensajeReal);
       return [];
     }
   }
@@ -343,15 +458,16 @@ class FlotaTerrestreRepository {
             ORDER BY R.geometria_via.STDistance(T.ubicacion_geo) ASC
         ) ViaCercana;
 
-        -- 🟢 LEGACY BRIDGE: Guardamos id_faro en la columna antigua id_geocerca
+        /* 🟢 LEGACY BRIDGE: Guardamos id_faro en la columna antigua id_geocerca */
         INSERT INTO TCL_HistoricoEventos (placa, id_geocerca, tipo_evento)
         SELECT LC.placa, G.id_faro, 'ENTRADA'
         FROM @LoteCamiones LC
-        INNER JOIN T_Maestro_Faros G ON LC.ubicacion_geo.STIntersects(G.geometria_ubicacion) = 1
+        /* 👇 CORRECCIÓN AQUÍ: geocerca_geo */
+        INNER JOIN T_Maestro_Faros G ON LC.ubicacion_geo.STIntersects(G.geocerca_geo) = 1
         WHERE G.estado = 1 AND NOT EXISTS (
             SELECT 1 FROM TCL_HistoricoEventos H 
             WHERE H.placa = LC.placa 
-              AND H.id_geocerca = G.id_faro -- Empalme de compatibilidad
+              AND H.id_geocerca = G.id_faro /* Empalme de compatibilidad */
               AND H.fecha_evento > DATEADD(minute, -30, GETDATE())
         );
 
@@ -365,78 +481,14 @@ class FlotaTerrestreRepository {
       }
       return [[{ FilasMovidas: 0 }]];
     } catch (error) {
-      console.error('❌ [ERROR MOTOR SQL - Lote ' + offset + ']:', error?.message || error);
+      const mensajeReal = error.original?.message || error.parent?.message || error.message;
+      console.error('❌ [ERROR MOTOR SQL - Lote ' + offset + ']:', mensajeReal);
       return [[{ FilasMovidas: 0 }]];
     }
   }
 
   // 4. Tablero de KPIs unificado (Terrestre y Marítimo)
   async obtenerGeocercasConKPIs() {
-    // const query = `
-    //   SELECT 
-    //       g.id_faro, 
-    //       g.nombre_faro, 
-    //       g.radio_metros,
-    //       g.tipo_faro,
-    //       g.descripcion, 
-    //       g.color_ui,
-    //       g.geometria_ubicacion.STAsText() as wkt,
-
-    //       -- KPIs Terrestres
-    //       ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
-    //       ISNULL(kpi_camiones.en_ruta, 0) as camiones_ruta,
-    //       ISNULL(kpi_camiones.detenidos, 0) as camiones_detenidos,
-
-    //       -- KPIs Marítimos
-    //       ISNULL(kpi_naves.total_naves, 0) as total_naves,
-    //       ISNULL(kpi_naves.fondeadas, 0) as naves_fondeadas,
-    //       ISNULL(kpi_naves.avisadas, 0) as naves_avisadas,
-    //       ISNULL(kpi_naves.arribadas, 0) as naves_arribadas,
-
-    //       CASE 
-    //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 50 THEN 'ROJO'
-    //           WHEN (ISNULL(kpi_camiones.total_camiones, 0) + ISNULL(kpi_naves.total_naves, 0)) > 20 THEN 'AMARILLO'
-    //           ELSE 'VERDE'
-    //       END as estado_kpi
-
-    //   FROM T_Maestro_Faros g WITH(NOLOCK)
-
-    //   -- 🚛 1. BÚSQUEDA TERRESTRE
-    //   OUTER APPLY (
-    //       SELECT 
-    //           COUNT(DISTINCT c.placa) as total_camiones,
-    //           SUM(CASE WHEN c.estado_camion = 'EN_RUTA' THEN 1 ELSE 0 END) as en_ruta,
-    //           SUM(CASE WHEN c.estado_camion != 'EN_RUTA' THEN 1 ELSE 0 END) as detenidos
-    //       FROM TCL_CamionesOperaciones c WITH(NOLOCK) 
-    //       WHERE c.ubicacion_geo IS NOT NULL 
-    //       AND c.ubicacion_geo.STIntersects(g.geometria_ubicacion) = 1
-    //   ) kpi_camiones
-
-    //   -- 🚢 2. BÚSQUEDA MARÍTIMA
-    //   OUTER APPLY (
-    //       SELECT 
-    //           COUNT(DISTINCT ais.mmsi) as total_naves,
-    //           SUM(CASE WHEN perfiles.estado_nave = 'FONDEADAS' THEN 1 ELSE 0 END) as fondeadas,
-    //           SUM(CASE WHEN perfiles.estado_nave = 'AVISADAS' THEN 1 ELSE 0 END) as avisadas,
-    //           SUM(CASE WHEN perfiles.estado_nave = 'ARRIBADAS' THEN 1 ELSE 0 END) as arribadas
-    //       FROM TCLAisUltimaPosicion ais WITH(NOLOCK)
-    //       LEFT JOIN (
-    //           SELECT motonave, 'AVISADAS' as estado_nave FROM TLCNaves_Avisadas WITH(NOLOCK)
-    //           UNION ALL
-    //           SELECT motonave, 'FONDEADAS' as estado_nave FROM TLCNaves_Fondeadas WITH(NOLOCK)
-    //           UNION ALL
-    //           SELECT motonave, 'ARRIBADAS' as estado_nave FROM TLCNaves_Arribadas WITH(NOLOCK)
-    //           UNION ALL
-    //           SELECT motonave, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK)
-    //       ) perfiles 
-    //       ON LTRIM(RTRIM(UPPER(ISNULL(ais.nombre_motonave, '')))) = LTRIM(RTRIM(UPPER(ISNULL(perfiles.motonave, ''))))
-
-    //       WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
-    //       AND geometry::Point(ais.longitud, ais.latitud, 4326).STIntersects(g.geometria_ubicacion) = 1
-    //   ) kpi_naves
-
-    //   WHERE g.estado = 1;
-    // `;
     const query = `
       SELECT 
           g.id_faro, 
@@ -447,12 +499,12 @@ class FlotaTerrestreRepository {
           g.color_ui,
           g.geocerca_geo.STAsText() as wkt,
           
-          -- KPIs Terrestres
+          /* KPIs Terrestres */
           ISNULL(kpi_camiones.total_camiones, 0) as total_camiones,
           ISNULL(kpi_camiones.en_ruta, 0) as camiones_ruta,
           ISNULL(kpi_camiones.detenidos, 0) as camiones_detenidos,
           
-          -- KPIs Marítimos
+          /* KPIs Marítimos */
           ISNULL(kpi_naves.total_naves, 0) as total_naves,
           ISNULL(kpi_naves.fondeadas, 0) as naves_fondeadas,
           ISNULL(kpi_naves.avisadas, 0) as naves_avisadas,
@@ -466,7 +518,7 @@ class FlotaTerrestreRepository {
 
       FROM T_Maestro_Faros g WITH(NOLOCK)
       
-      -- 🚛 1. BÚSQUEDA TERRESTRE
+      /* 🚛 1. BÚSQUEDA TERRESTRE */
       OUTER APPLY (
           SELECT 
               COUNT(DISTINCT c.placa) as total_camiones,
@@ -477,7 +529,7 @@ class FlotaTerrestreRepository {
           AND c.ubicacion_geo.STIntersects(g.geocerca_geo) = 1
       ) kpi_camiones
       
-      -- 🚢 2. BÚSQUEDA MARÍTIMA
+      /* 🚢 2. BÚSQUEDA MARÍTIMA */
       OUTER APPLY (
           SELECT 
               COUNT(DISTINCT ais.mmsi) as total_naves,
@@ -494,7 +546,7 @@ class FlotaTerrestreRepository {
               UNION ALL
               SELECT omi, 'ZARPADAS' as estado_nave FROM TLCNaves_Zarpadas WITH(NOLOCK) WHERE omi IS NOT NULL
           ) perfiles 
-          -- 👇 AQUÍ ESTÁ LA MAGIA: Extraemos los últimos 6 dígitos del AIS
+          /* 👇 AQUÍ ESTÁ LA MAGIA: Extraemos los últimos 6 dígitos del AIS */
           ON RIGHT(LTRIM(RTRIM(ais.omi)), 6) = LTRIM(RTRIM(perfiles.omi))
           
           WHERE ais.latitud IS NOT NULL AND ais.longitud IS NOT NULL
@@ -509,17 +561,32 @@ class FlotaTerrestreRepository {
       return resultados || [];
     } catch (error) {
       console.log("❌ DETALLE OCULTO DE SQL SERVER:");
-      // Los errores agrupados por el driver tedious suelen vivir dentro de la propiedad 'errors'
       const erroresReales = error.parent?.errors || error.errors || error;
       console.dir(erroresReales, { depth: null, colors: true });
     }
   }
 
   // 5. Consulta específica para zonas marítimas puras
+  // async obtenerGeocercasMaritimas() {
+  //   const query = `
+  //     SELECT id_faro, nombre_faro, radio_metros, color_ui, descripcion, 
+  //            geometria_ubicacion.STAsText() as wkt
+  //     FROM T_Maestro_Faros WITH(NOLOCK)
+  //     WHERE tipo_faro = 'MARITIMA' AND estado = 1;
+  //   `;
+  //   try {
+  //     const [resultados] = await sequelize.query(query);
+  //     return resultados || [];
+  //   } catch (error) {
+  //     console.error('❌ [ERROR OBTENER FAROS MARÍTIMOS]:', error?.message || error);
+  //     return [];
+  //   }
+  // }
   async obtenerGeocercasMaritimas() {
     const query = `
       SELECT id_faro, nombre_faro, radio_metros, color_ui, descripcion, 
-             geometria_ubicacion.STAsText() as wkt
+             /* 👇 CORRECCIÓN AQUÍ: geocerca_geo */
+             geocerca_geo.STAsText() as wkt
       FROM T_Maestro_Faros WITH(NOLOCK)
       WHERE tipo_faro = 'MARITIMA' AND estado = 1;
     `;
@@ -527,7 +594,8 @@ class FlotaTerrestreRepository {
       const [resultados] = await sequelize.query(query);
       return resultados || [];
     } catch (error) {
-      console.error('❌ [ERROR OBTENER FAROS MARÍTIMOS]:', error?.message || error);
+      const mensajeReal = error.original?.message || error.parent?.message || error.message;
+      console.error('❌ [ERROR OBTENER FAROS MARÍTIMOS]:', mensajeReal);
       return [];
     }
   }
@@ -538,4 +606,3 @@ class FlotaTerrestreRepository {
 }
 
 module.exports = new FlotaTerrestreRepository();
-
