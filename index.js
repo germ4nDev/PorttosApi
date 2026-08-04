@@ -24,6 +24,7 @@ const PuertoRepository = require('./repositories/torre-control/puertos.repositor
 const GeoreferenciacionService = require('./services/torre-control/georeferenciacion.service');
 const ClimaEtlService = require('./services/torre-control/clima-etl.service');
 const FlotaTerrestreService = require('./services/torre-control/flota-terrestre.service');
+const aisRadar = require('./services/torre-control/ais-redar-manager.service');
 // ================================================
 
 const app = express();
@@ -145,8 +146,10 @@ app.use('/api/motonaves', require('./routes/torre-control/motonves.routes'));
 app.use('/api/faros', require('./routes/torre-control/faros.routes'));
 app.use('/api/radar', require('./routes/torre-control/radar.routes'));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "public/index.html"));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 console.log('Servidor corriendo y vigilantes activos...');
@@ -182,7 +185,8 @@ sequelize
       setTimeout(async () => {
         try {
           // console.log('🔄 [COLD START] Ejecutando sincronización de arranque (Sitmar)...');
-          await SitmarEtlService.sincronizarTodasLasNaves();
+          // await SitmarEtlService.sincronizarTodasLasNaves();
+          aisRadar.iniciarRadarGlobal(io);
           console.log('✅ [COLD START] Sincronización inicial completada.');
         } catch (syncError) {
           console.error('❌ [COLD START ERROR] Fallo inicial de Sitmar:', syncError.message);

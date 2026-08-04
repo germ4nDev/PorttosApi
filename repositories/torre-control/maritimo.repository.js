@@ -663,7 +663,7 @@ class MaritimoRepository {
   /**
      * Trae las naves de DIMAR que no tienen MMSI en la tabla de homologación
      */
-  static async getNavesSinHomologar() {
+  async getNavesSinHomologar() {
     const query = `
             SELECT d.id_aviso, d.motonave, d.omi 
             FROM dbo.TLCNaves_Arribadas d
@@ -678,7 +678,7 @@ class MaritimoRepository {
   /**
    * Registra el vínculo encontrado
    */
-  static async registrarHomologacion(idAviso, mmsi) {
+  async registrarHomologacion(idAviso, mmsi) {
     const query = `
             INSERT INTO dbo.TCL_Homologacion_MMSI (id_aviso, mmsi) 
             VALUES (:id_aviso, :mmsi)
