@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const UploadsService = require("../services/uploads.service");

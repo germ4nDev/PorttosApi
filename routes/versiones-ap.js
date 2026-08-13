@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture Pattern & Strict Validations
+    Refactored for: PORTTOS Architecture Pattern & Strict Validations
     Ruta: /api/versiones-ap
 */
 const { Router } = require("express");

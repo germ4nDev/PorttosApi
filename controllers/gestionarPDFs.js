@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const PdfService = require("../services/pdf.service");
@@ -9,7 +9,7 @@ const service = new PdfService();
 
 const generatePdf = async (req, res = response) => {
     try {
-        // QPLUS: El controlador prepara el payload. 
+        // PORTTOS: El controlador prepara el payload. 
         // Si el servicio requiere auditoría, inyectamos el contexto aquí.
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
@@ -17,7 +17,7 @@ const generatePdf = async (req, res = response) => {
         // Delegación de validación y lógica al servicio
         const resultadoPdf = await service.generatePdf(dataDTO);
 
-        // QPLUS: Respuesta estándar, devolviendo el objeto resultante en 'respuesta'
+        // PORTTOS: Respuesta estándar, devolviendo el objeto resultante en 'respuesta'
         return res.status(200).json({
             ok: true,
             respuesta: {

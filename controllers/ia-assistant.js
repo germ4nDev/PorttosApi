@@ -15,7 +15,7 @@ class IaAssistantController {
       }
 
       // Llamamos a la capa de negocio. 
-      // (Si tuvieras un middleware de transacciones estilo QPLUS, pasarías el objeto `req.transaction` aquí)
+      // (Si tuvieras un middleware de transacciones estilo PORTTOS, pasarías el objeto `req.transaction` aquí)
       const result = await iaAssistantService.processUserQuery(prompt);
 
       return res.status(200).json({

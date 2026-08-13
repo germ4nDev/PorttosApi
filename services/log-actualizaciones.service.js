@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Immutable Audit Logs & Transactional Integrity
+    Refactored for: PORTTOS Architecture, Immutable Audit Logs & Transactional Integrity
 */
 const { sequelize } = require('../database/connection');
 const { LogActualizacionModel, LogActualizacionDTO } = require('../models/log-actualizacion');

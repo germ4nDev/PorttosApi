@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Audit Standards
+    Refactored for: PORTTOS Architecture, Context Injection & Audit Standards
 */
 const { response } = require("express");
 const SuscriptoresService = require("../services/suscriptores.service");
@@ -34,7 +34,7 @@ const getSuscriptorById = async (req, res = response) => {
 
 const createSuscriptor = async (req, res = response) => {
   try {
-    // QPLUS: Inyección de auditoría
+    // PORTTOS: Inyección de auditoría
     const dataDTO = { ...req.body };
 
     const suscriptor = await service.createSuscriptor(dataDTO);
@@ -51,7 +51,7 @@ const updateSuscriptor = async (req, res = response) => {
   try {
     const { id } = req.params;
 
-    // QPLUS: Hidratación del payload de auditoría
+    // PORTTOS: Hidratación del payload de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

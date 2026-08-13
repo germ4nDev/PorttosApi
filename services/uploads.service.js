@@ -1,7 +1,7 @@
 
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, File System Management, Async I/O & Dynamic Image Compression
+    Refactored for: PORTTOS Architecture, File System Management, Async I/O & Dynamic Image Compression
 */
 const path = require("path");
 const fs = require("fs").promises;

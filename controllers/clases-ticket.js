@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const ClasesTicketService = require("../services/clases-ticlet.service");
@@ -34,7 +34,7 @@ const getClaseTicketById = async (req, res = response) => {
 
 const createClaseTicket = async (req, res = response) => {
   try {
-    // QPLUS: Inyección de auditoría para el DTO
+    // PORTTOS: Inyección de auditoría para el DTO
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -52,7 +52,7 @@ const updateClaseTicket = async (req, res = response) => {
   try {
     const { id } = req.params;
 
-    // QPLUS: Hidratación del payload de auditoría
+    // PORTTOS: Hidratación del payload de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

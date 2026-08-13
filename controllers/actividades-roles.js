@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const ActividadesRolesService = require("../services/actividades-roles.service");
@@ -12,7 +12,7 @@ const getActividadesRoles = async (req, res = response) => {
     const actividadesRoles = await service.getActividadesRoles();
     return res.status(200).json({ ok: true, actividadesRoles });
   } catch (error) {
-    // QPLUS: Propagación estándar de errores desde el servicio
+    // PORTTOS: Propagación estándar de errores desde el servicio
     return res.status(error.statusCode || 500).json({
       ok: false,
       msg: error.msg || "Error interno al obtener actividades-roles."
@@ -48,7 +48,7 @@ const getActividadByCodeRole = async (req, res = response) => {
 
 const createActividadRole = async (req, res = response) => {
   try {
-    // QPLUS: Inyección de contexto de auditoría antes del servicio
+    // PORTTOS: Inyección de contexto de auditoría antes del servicio
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -66,7 +66,7 @@ const updateActividadRole = async (req, res = response) => {
   try {
     const { ac, ro } = req.params;
 
-    // QPLUS: El controlador asume la responsabilidad de hidratar el payload
+    // PORTTOS: El controlador asume la responsabilidad de hidratar el payload
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

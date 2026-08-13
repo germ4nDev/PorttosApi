@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture - Full Analytical Adapter (SIMULATOR)
+    Refactored for: PORTTOS Architecture - Full Analytical Adapter (SIMULATOR)
 */
 const sequelize = require('../database/connection');
 

@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS DTO Pattern, RBAC Standardization, Clean Code & Joi Validation
+    Refactored for: PORTTOS DTO Pattern, RBAC Standardization, Clean Code & Joi Validation
 */
 const Joi = require('joi');
 const { DataTypes } = require('sequelize');

@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Service Layer Sanitization & Transactional Integrity
+    Refactored for: PORTTOS Architecture, Service Layer Sanitization & Transactional Integrity
 */
 const { sequelize } = require('../database/connection');
 const { UsuarioSCModel, UsuarioSCDTO } = require('../models/usuario-sc');

@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const IdiomaService = require("../services/idiomas.service");
@@ -34,7 +34,7 @@ const getIdiomaById = async (req, res = response) => {
 
 const createIdioma = async (req, res = response) => {
     try {
-        // QPLUS: Inyección de auditoría
+        // PORTTOS: Inyección de auditoría
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -52,7 +52,7 @@ const updateIdioma = async (req, res = response) => {
     try {
         const { id } = req.params;
 
-        // QPLUS: Hidratación del payload
+        // PORTTOS: Hidratación del payload
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

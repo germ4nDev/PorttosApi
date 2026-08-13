@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Audit Standards
+    Refactored for: PORTTOS Architecture, Context Injection & Audit Standards
 */
 const { response } = require("express");
 const UsuariosService = require("../services/usuarios.service");
@@ -47,7 +47,7 @@ const validatePassword = async (req, res = response) => {
 
 const createUsuario = async (req, res = response) => {
   try {
-    // QPLUS: Auditoría inicial
+    // PORTTOS: Auditoría inicial
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -66,7 +66,7 @@ const updateUsuario = async (req, res = response) => {
   try {
     const { id } = req.params;
 
-    // QPLUS: Hidratación del payload de auditoría
+    // PORTTOS: Hidratación del payload de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

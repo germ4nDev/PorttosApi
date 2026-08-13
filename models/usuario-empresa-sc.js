@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS DTO Pattern, Multi-tenant Linkage, Typo Correction & Joi Validation
+    Refactored for: PORTTOS DTO Pattern, Multi-tenant Linkage, Typo Correction & Joi Validation
 */
 const Joi = require('joi');
 const { DataTypes } = require('sequelize');

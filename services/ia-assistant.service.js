@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Autonomous Schema Discovery, Full Analytical Engine & Multi-Agent TCL
+    Refactored for: PORTTOS Architecture, Autonomous Schema Discovery, Full Analytical Engine & Multi-Agent TCL
 */
 const claudeAdapter = require('../adapters/claude.adapter');
 const { GUARDRAIL_PROMPT } = require('../config/guardrails.config');
@@ -174,7 +174,7 @@ class IaAssistantService {
 
     const codigosActivos = agentesActivos.map(a => a.agente.codigoAgente);
     return todasLasTools.filter(tool => {
-      if (!tool.requiereAgente) return true; // Herramientas de QPLUS base
+      if (!tool.requiereAgente) return true; // Herramientas de PORTTOS base
       return codigosActivos.includes(tool.requiereAgente); // Herramientas TCL
     });
   }
@@ -343,7 +343,7 @@ class IaAssistantService {
           }]
         },
         tipo_grafica: tipo_grafica,
-        db_source: `QPLUS DB - Agrupado por: ${columna_agrupacion}`
+        db_source: `PORTTOS DB - Agrupado por: ${columna_agrupacion}`
       };
     } catch (e) {
       console.error("Error en motor de agrupación:", e);

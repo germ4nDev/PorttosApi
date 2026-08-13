@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const BibliotecasService = require("../services/bibliotecas.service");
@@ -35,7 +35,7 @@ const getBibliotecaByCode = async (req, res = response) => {
 
 const createBiblioteca = async (req, res = response) => {
     try {
-        // QPLUS: Inyección de contexto de auditoría
+        // PORTTOS: Inyección de contexto de auditoría
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -54,7 +54,7 @@ const updateBiblioteca = async (req, res = response) => {
     try {
         const { codigoBiblioteca, ...data } = req.body;
 
-        // QPLUS: Hidratación del payload de auditoría
+        // PORTTOS: Hidratación del payload de auditoría
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...data, codigoUsuario: usuarioAccion };
 

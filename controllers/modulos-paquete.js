@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const ModuloPaqueteService = require("../services/modulos-paquete.service");
@@ -47,7 +47,7 @@ const getModulosPaqueteByCode = async (req, res = response) => {
 
 const createModulosPaquete = async (req, res = response) => {
     try {
-        // QPLUS: Inyección de auditoría
+        // PORTTOS: Inyección de auditoría
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -65,7 +65,7 @@ const updateModulosPaquete = async (req, res = response) => {
     try {
         const { id } = req.params;
 
-        // QPLUS: Hidratación del payload
+        // PORTTOS: Hidratación del payload
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
         const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

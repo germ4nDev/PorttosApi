@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS DTO Pattern, Entity Standardization, Update Fix & Joi Validation
+    Refactored for: PORTTOS DTO Pattern, Entity Standardization, Update Fix & Joi Validation
 */
 const Joi = require('joi');
 const { DataTypes } = require('sequelize');

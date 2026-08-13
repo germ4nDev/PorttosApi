@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Asynchronous I/O Optimization & Puppeteer Lifecycle
+    Refactored for: PORTTOS Architecture, Asynchronous I/O Optimization & Puppeteer Lifecycle
 */
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
@@ -27,7 +27,7 @@ class PdfService {
             displayHeaderFooter: true,
             headerTemplate: `
             <div style="font-size: 10px; width: 100%; border-bottom: 1px solid #ccc; padding: 5px 1cm; text-align: center; font-family: Arial; color: #666;">
-                <span style="float: left;">Reporte Corporativo QPLUS</span>
+                <span style="float: left;">Reporte Corporativo PORTTOS</span>
                 <span style="float: right;">Fecha: <span class="date"></span></span>
             </div>`,
             footerTemplate: `
@@ -86,7 +86,7 @@ class PdfService {
 
         } catch (error) {
             console.error('Error crítico en PdfService:', error);
-            // Mantenemos el formato de error QPLUS para que el BaseController lo capture
+            // Mantenemos el formato de error PORTTOS para que el BaseController lo capture
             throw { statusCode: 500, msg: 'Error interno al renderizar el documento PDF.' };
         } finally {
             // 6. GARANTÍA DE MEMORIA: Siempre cerramos el navegador, incluso si el proceso falló

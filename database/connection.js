@@ -1,41 +1,23 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
-// 1. Instancia única de conexión
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
   process.env.DB_PWD,
   {
-    host: process.env.DB_SERVER,
+host: process.env.DB_SERVER,
+    port: process.env.DB_PORT|| 3000,
     dialect: 'mssql',
-    port: 1433,
     logging: false,
     pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
     dialectOptions: {
       options: {
-        encrypt: false, // Cambia a true si usas Azure
+        encrypt: false,
         trustServerCertificate: true
       }
     }
   }
 );
-
-// const sequelize = new Sequelize(
-//   process.env.DB_NAME,
-//   process.env.DB_USER,
-//   process.env.DB_PWD,
-//   {
-// host: process.env.DB_SERVER,
-//     port: 50644,
-//     dialect: 'mssql',
-//     dialectOptions: {
-//       options: {
-//         encrypt: false,
-//         trustServerCertificate: true
-//       }
-//     }
-//   }
-// );
 
 // 2. Objeto db que contendrá los modelos
 const db = {};

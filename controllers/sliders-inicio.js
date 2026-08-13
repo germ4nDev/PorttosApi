@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const SliderService = require("../services/sliders-inicio.service");
@@ -34,7 +34,7 @@ const getSliderById = async (req, res = response) => {
 
 const createSlider = async (req, res = response) => {
   try {
-    // QPLUS: Inyección de auditoría
+    // PORTTOS: Inyección de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -53,7 +53,7 @@ const updateSlider = async (req, res = response) => {
     const { id } = req.params;
     console.log('body', req.body);
 
-    // QPLUS: Hidratación del payload de auditoría
+    // PORTTOS: Hidratación del payload de auditoría
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
     const sliderInicio = await service.updateSlider(id, dataDTO);

@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture - Auth, Security Flow & Joi Validation
+    Refactored for: PORTTOS Architecture - Auth, Security Flow & Joi Validation
 */
 const { response } = require('express');
 const Joi = require('joi');
@@ -24,7 +24,7 @@ const verificarRolAdmin = (req, res = response, next) => {
     if (!usuarioSolicitante) {
         return res.status(500).json({
             ok: false,
-            msg: 'QPLUS-ERR: Se intentó verificar el rol sin validar el token JWT primero.'
+            msg: 'PORTTOS-ERR: Se intentó verificar el rol sin validar el token JWT primero.'
         });
     }
 
@@ -44,7 +44,7 @@ const checkBlacklist = (req, res = response, next) => {
     if (!userId) {
         return res.status(500).json({
             ok: false,
-            msg: 'QPLUS-ERR: No se pudo identificar al usuario en el payload para validar la sesión.'
+            msg: 'PORTTOS-ERR: No se pudo identificar al usuario en el payload para validar la sesión.'
         });
     }
 
@@ -79,7 +79,7 @@ const revocarSesionUsuario = async (req, res = response) => {
     try {
         TokenBlacklistService.revokeSession(userIdToRevoke);
 
-        // 3. Integración con el ecosistema de logs QPLUS (Ejemplo de implementación de tu TODO)
+        // 3. Integración con el ecosistema de logs PORTTOS (Ejemplo de implementación de tu TODO)
         /*
         const logData = LogActividadDTO({
             codigoAplicacion: 'PLATAFORMA_2.0',

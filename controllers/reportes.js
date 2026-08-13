@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Error Handling
 */
 const { response } = require("express");
 const PdfService = require("../services/pdf.service");
@@ -9,7 +9,7 @@ const service = new PdfService();
 
 const generarReportePdf = async (req, res = response) => {
   try {
-    // QPLUS: Preparación del DTO con contexto de auditoría
+    // PORTTOS: Preparación del DTO con contexto de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = {
       html: req.body.html,

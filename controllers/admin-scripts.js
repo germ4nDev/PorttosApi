@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Standardized Error Handling
+    Refactored for: PORTTOS Architecture, Context Injection & Standardized Error Handling
 */
 const { response } = require('express');
 const ScriptsService = require('../services/admin-scripts.service');
@@ -9,7 +9,7 @@ const service = new ScriptsService();
 
 const ejecutarScript = async (req, res = response) => {
     try {
-        // QPLUS: Inyección de contexto de auditoría (quién ejecuta el script)
+        // PORTTOS: Inyección de contexto de auditoría (quién ejecuta el script)
         const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
 
         const rawData = {
@@ -23,11 +23,11 @@ const ejecutarScript = async (req, res = response) => {
         return res.status(200).json({
             ok: true,
             msg: "Operación exitosa", // Opcional, para consistencia
-            respuesta: mensajeExito   // QPLUS: Llave de payload estandarizada
+            respuesta: mensajeExito   // PORTTOS: Llave de payload estandarizada
         });
 
     } catch (error) {
-        // QPLUS: Limpieza de console.error y delegación estricta al servicio
+        // PORTTOS: Limpieza de console.error y delegación estricta al servicio
         return res.status(error.statusCode || 500).json({
             ok: false,
             msg: error.msg || error.message || 'Error al procesar el archivo o ejecutar el script.',
@@ -53,7 +53,7 @@ const ejecutarScriptMultiDb = async (req, res = response) => {
             return res.status(200).json({
                 ok: true,
                 msg: 'Script ejecutado con éxito en TODAS las bases de datos.',
-                respuesta: resultados // QPLUS: Llave de payload estandarizada
+                respuesta: resultados // PORTTOS: Llave de payload estandarizada
             });
         } else {
             return res.status(207).json({

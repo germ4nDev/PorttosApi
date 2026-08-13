@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Audit Standards
+    Refactored for: PORTTOS Architecture, Context Injection & Audit Standards
 */
 const { response } = require("express");
 const TextoIDService = require("../services/textos-id.service");
@@ -34,7 +34,7 @@ const getTextoById = async (req, res = response) => {
 
 const createTexto = async (req, res = response) => {
   try {
-    // QPLUS: Inyección de contexto de auditoría con fallback
+    // PORTTOS: Inyección de contexto de auditoría con fallback
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 
@@ -52,7 +52,7 @@ const updateTexto = async (req, res = response) => {
   try {
     const { id } = req.params;
 
-    // QPLUS: Hidratación del payload de auditoría
+    // PORTTOS: Hidratación del payload de auditoría
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

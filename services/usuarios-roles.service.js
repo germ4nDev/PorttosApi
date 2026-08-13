@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Bulk Synchronization & Transactional Integrity
+    Refactored for: PORTTOS Architecture, Bulk Synchronization & Transactional Integrity
 */
 const { sequelize } = require("../database/connection");
 const { UsuarioRoleModel, UsuarioRoleDTO } = require("../models/usuario-role");

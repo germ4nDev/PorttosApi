@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Standard (Clean Service Layer)
+    Refactored for: PORTTOS Standard (Clean Service Layer)
 */
 const { sequelize } = require('../database/connection');
 const { AplicacionModel, AplicacionDTO } = require('../models/aplicacion');

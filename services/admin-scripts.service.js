@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Batch Execution Security & Service Layer
+    Refactored for: PORTTOS Architecture, Batch Execution Security & Service Layer
 */
 const fs = require('fs').promises;
 const path = require('path');
@@ -8,7 +8,7 @@ const { Sequelize } = require('sequelize');
 const Joi = require('joi');
 
 // =======================================================================
-// 🛡️ ESQUEMAS DE VALIDACIÓN QPLUS
+// 🛡️ ESQUEMAS DE VALIDACIÓN PORTTOS
 // =======================================================================
 const ScriptUnicoSchema = Joi.object({
     nombreArchivo: Joi.string().required(),

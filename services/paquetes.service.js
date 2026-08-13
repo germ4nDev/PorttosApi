@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Service Layer Sanitization & Transactional Integrity
+    Refactored for: PORTTOS Architecture, Service Layer Sanitization & Transactional Integrity
 */
 const { sequelize } = require('../database/connection');
 const { PaqueteModel, PaqueteDTO } = require('../models/paquete');
@@ -47,7 +47,7 @@ class PaqueteService {
     const dataDTO = PaqueteDTO(rawData);
 
     return await sequelize.transaction(async (t) => {
-      // Optimización QPLUS: Ejecución en paralelo de validaciones independientes
+      // Optimización PORTTOS: Ejecución en paralelo de validaciones independientes
       const [existente, existeNombre] = await Promise.all([
         this.model.findOne({ where: { codigoPaquete: dataDTO.codigoPaquete }, transaction: t }),
         this.model.findOne({ where: { nombrePaquete: dataDTO.nombrePaquete }, transaction: t })

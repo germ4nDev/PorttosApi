@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS DTO Pattern
+    Refactored for: PORTTOS DTO Pattern
 */
 const Joi = require('joi');
 const { DataTypes } = require('sequelize');

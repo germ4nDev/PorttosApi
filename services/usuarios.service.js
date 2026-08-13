@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Security & Transactional Integrity
+    Refactored for: PORTTOS Architecture, Security & Transactional Integrity
 */
 const { sequelize } = require('../database/connection');
 const bcrypt = require("bcryptjs");

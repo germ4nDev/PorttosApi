@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, File System Management & Transactional Integrity
+    Refactored for: PORTTOS Architecture, File System Management & Transactional Integrity
 */
 const fs = require("fs").promises;
 const path = require("path");

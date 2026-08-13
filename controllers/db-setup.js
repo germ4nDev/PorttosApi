@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Error Handling & Response Consistency
+    Refactored for: PORTTOS Architecture, Error Handling & Response Consistency
 */
 const { response } = require("express");
 const DbInitService = require("../services/db-script.service");

@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Context Injection & Audit Standards
+    Refactored for: PORTTOS Architecture, Context Injection & Audit Standards
 */
 const { response } = require("express");
 const LogsActualizacionService = require("../services/log-actualizaciones.service");
@@ -34,7 +34,7 @@ const getLogById = async (req, res = response) => {
 
 const createLog = async (req, res = response) => {
   try {
-    // QPLUS: Contexto de auditoría con fallback a SISTEMA
+    // PORTTOS: Contexto de auditoría con fallback a SISTEMA
     const usuarioAccion = req.usuario?.codigoUsuario || 'SISTEMA';
     const dataDTO = { ...req.body, codigoUsuario: usuarioAccion };
 

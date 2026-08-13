@@ -1,6 +1,6 @@
 /*
     Author: German Valencia
-    Refactored for: QPLUS Architecture, Batch Execution Safety & Error Handling
+    Refactored for: PORTTOS Architecture, Batch Execution Safety & Error Handling
 */
 const fs = require('fs').promises;
 const path = require('path');
