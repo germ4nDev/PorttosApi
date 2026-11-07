@@ -15,6 +15,29 @@ class FlotaTerrestreService {
   // ==========================================
   // 1. GENERADOR DE GEOJSON PARA MAPLIBRE
   // ==========================================
+  // async obtenerFlotaGeoJSON() {
+  //   const camiones = await FlotaTerrestreRepository.obtenerDatosGeograficosFlota();
+
+  //   return {
+  //     type: 'FeatureCollection',
+  //     features: (camiones || []).map(camion => ({
+  //       type: 'Feature',
+  //       geometry: {
+  //         type: 'Point',
+  //         coordinates: [camion.lon, camion.lat]
+  //       },
+  //       properties: {
+  //         placa: camion.placa,
+  //         modelo: camion.modelo || 'N/A',
+  //         tipo_camion: camion.tipo_camion || 'Tractocamión',
+  //         estado: camion.estado || 'EN_RUTA',
+  //         velocidad: camion.velocidad || 0,
+  //         conductor: camion.conductor || 'N/A',
+  //         ultima_actualizacion: camion.ultima_actualizacion
+  //       }
+  //     }))
+  //   };
+  // }
   async obtenerFlotaGeoJSON() {
     const camiones = await FlotaTerrestreRepository.obtenerDatosGeograficosFlota();
 
@@ -28,10 +51,12 @@ class FlotaTerrestreService {
         },
         properties: {
           placa: camion.placa,
+          marca: camion.marca || 'N/A', // 🟢 Agrégalo para que Angular lo pueda leer
           modelo: camion.modelo || 'N/A',
           tipo_camion: camion.tipo_camion || 'Tractocamión',
           estado: camion.estado || 'EN_RUTA',
           velocidad: camion.velocidad || 0,
+          rumbo: camion.rumbo || 0,
           conductor: camion.conductor || 'N/A',
           ultima_actualizacion: camion.ultima_actualizacion
         }

@@ -5,8 +5,8 @@ const sequelize = new Sequelize(
   process.env.DB_USER,
   process.env.DB_PWD,
   {
-host: process.env.DB_SERVER,
-    port: process.env.DB_PORT|| 3000,
+    host: process.env.DB_SERVER,
+    port: process.env.DB_PORT || 3000,
     dialect: 'mssql',
     logging: false,
     pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
@@ -19,12 +19,10 @@ host: process.env.DB_SERVER,
   }
 );
 
-// 2. Objeto db que contendrá los modelos
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// // 3. Registro de modelos con manejo de errores interno
 try {
   db.TLCRNDCOperacionTerrestre = require('../models/torre-control/rndc.model')(sequelize, DataTypes);
 
